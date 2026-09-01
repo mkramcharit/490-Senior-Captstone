@@ -1,0 +1,2195 @@
+/* TREKMARK FRONT END - styles.css
+
+This CSS file is used to style the entire Trekmark experience.
+
+Quick note on the styling approach:
+We went through many iterations while designing Trekmark. Rather than
+erasing earlier styles with each iteration, later sections of the
+stylesheet will override earlier styles. This is due to the "cascade" in
+CSS. Generally the later styles will be applied over the earlier ones
+if they have the same specificity.
+
+For this reason you will see styles like .planner, .hero, or .globe-stage
+appear more than once. The first instance of the style will represent the
+original design and any subsequent instance will represent a later
+design iteration.
+
+Sections within this file:
+
+- Typography and colors for all pages globally
+- Fixed navigation
+- Hero section
+- Rotating Earth / globe indicators
+- Preview of selected destination
+- Cinematic image carousel
+- Marketing cards
+- Trip Canvas
+- Background particles and flight animations
+- Upload analysis overlay
+- Responsive / mobile rules
+
+The comments are there to provide enough information for someone reading this for a
+college capstone project to not only know WHAT a rule does, but also WHY. */
+
+/* Imports Inter from Google Fonts. Fallbacks to system fonts if the web font fails to load for some reason. */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* GLOBAL DESIGN TOKENS
+
+Colors are stored as CSS custom properties (variables) so they can be used globally across the page. This allows for easier implementation of global theming. */
+:root{font-family:Inter,-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;color:#f7f9fc;background:#05070b;font-synthesis:none;text-rendering:optimizeLegibility;--line:rgba(255,255,255,.11);--muted:#98a2b3;--ice:#a9dcff;--blue:#5ab8ff;--panel:#0c1119}
+/* width/height measurements become more reliable with border-box because
+the padding and border are part of the specified dimensions for the element. */
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-width:320px;background:radial-gradient(circle at 50% -15%,#172337 0,#090d14 28%,#05070b 55%);color:#fff;overflow-x:hidden}button,a{font:inherit}button{cursor:pointer}.shell{width:min(1240px,calc(100% - 48px));margin-inline:auto}/* NAVIGATION - BASE STYLES
+
+Later in the file this becomes a fixed glass navbar. */
+.nav{height:80px;display:flex;align-items:center;justify-content:space-between;position:relative;z-index:20}.brand{color:white;text-decoration:none;font-weight:650;display:flex;align-items:center;gap:10px;letter-spacing:-.02em}.brand-mark{width:31px;height:31px;border-radius:10px;background:linear-gradient(145deg,#fff,#83cfff);display:grid;place-items:center;color:#071018;box-shadow:0 0 40px rgba(85,184,255,.25)}.nav-links{display:flex;align-items:center;gap:28px}.nav-links a{color:#aeb7c5;text-decoration:none;font-size:13px}.upload-mini{border:1px solid var(--line);color:#eef5ff;background:rgba(255,255,255,.05);padding:10px 14px;border-radius:999px;display:flex;gap:8px;align-items:center;backdrop-filter:blur(20px)}
+/* HERO SECTION
+
+Two column layout on desktop. Left side is marketing copy and right side is globe. */
+.hero{min-height:760px;display:grid;grid-template-columns:.87fr 1.13fr;align-items:center;position:relative;z-index:2}.hero-copy{padding:70px 0 110px}.eyebrow{text-transform:uppercase;letter-spacing:.13em;font-size:11px;font-weight:700;color:#80cfff;display:flex;align-items:center;gap:8px;margin-bottom:20px}.eyebrow.light{color:#eaf7ff}.hero h1,.promise h2,.planner h2,.final-cta h2{font-size:clamp(50px,5vw,78px);line-height:.98;letter-spacing:-.055em;margin:0;font-weight:650}.hero h1 span,.promise h2 span{background:linear-gradient(90deg,#f3fbff,#7bc8ff 55%,#8d8cff);-webkit-background-clip:text;color:transparent}.hero-copy>p{color:#a7b0be;font-size:17px;line-height:1.7;max-width:590px;margin:28px 0 32px}.hero-actions{display:flex;gap:12px;flex-wrap:wrap}.primary,.ghost{border:0;border-radius:999px;padding:14px 20px;display:inline-flex;gap:9px;align-items:center;font-weight:650;transition:.25s ease}.primary{background:#f7fbff;color:#071018;box-shadow:0 10px 40px rgba(161,218,255,.12)}.primary:hover{transform:translateY(-2px);box-shadow:0 15px 50px rgba(161,218,255,.22)}.ghost{color:#dbe5f0;background:transparent}.ghost:hover{background:rgba(255,255,255,.06)}.compact{padding:12px 16px;font-size:13px}.micro-proof{display:flex;gap:16px;color:#748093;font-size:11px;margin-top:29px}.micro-proof span{display:flex;align-items:center;gap:6px}/* The stage for the globe is a large container that centers the rotating Earth
+and provides space for the glow and assistive text. */
+.globe-stage{height:690px;position:relative;display:grid;place-items:center;isolation:isolate}.globe-stage canvas{position:relative;z-index:2}.globe-glow{position:absolute;width:75%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,rgba(80,173,255,.22),rgba(27,57,100,.08) 55%,transparent 72%);filter:blur(22px);z-index:-1}.destination-dock{position:absolute;z-index:5;left:50%;bottom:26px;transform:translateX(-50%);display:flex;gap:7px;padding:7px;background:rgba(5,9,14,.66);border:1px solid var(--line);border-radius:18px;backdrop-filter:blur(22px);box-shadow:0 16px 70px rgba(0,0,0,.28);white-space:nowrap}.destination-dock button{border:0;background:transparent;color:#8792a3;padding:9px 11px;border-radius:12px;font-size:11px;display:flex;gap:7px;align-items:center;transition:.25s}.destination-dock button.active,.destination-dock button:hover{color:white;background:rgba(255,255,255,.08)}.dot{width:5px;height:5px;background:#6ec4ff;border-radius:50%;box-shadow:0 0 10px #6ec4ff}/* SELECTED DESTINATION PREVIEW
+
+Larger image box that appears after selecting a destination involving a globe. */
+.selected-strip{padding:10px 0 110px}.selected-card{position:relative;min-height:330px;border:1px solid var(--line);border-radius:34px;overflow:hidden;background:#0b1018}.selected-image{position:absolute;inset:0;background-size:cover;background-position:center}.selected-copy{position:relative;z-index:2;padding:62px;max-width:610px}.destination-meta{display:flex;align-items:center;gap:8px;color:#d7e1eb;font-size:12px}.destination-meta span{margin-left:9px;color:#77d1a7;border-left:1px solid rgba(255,255,255,.18);padding-left:16px}.selected-copy h2{font-size:55px;letter-spacing:-.05em;margin:18px 0 6px}.selected-copy p{color:#c1c8d2;margin:0 0 28px}/* ROTATING CINEMATIC IMAGE GALLERY
+
+This section uses the background image. The image changes based on the galleryIndex. */
+.visual-story{height:680px;position:relative;overflow:hidden}.visual-bg{position:absolute;inset:0;background-size:cover;background-position:center}.visual-story:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(3,5,8,.36),transparent 55%)}.visual-content{height:100%;position:relative;z-index:2;display:flex;flex-direction:column;justify-content:flex-end;padding-bottom:70px}.visual-content h2{font-size:clamp(48px,7vw,94px);letter-spacing:-.06em;margin:0}.gallery-dots{display:flex;gap:8px;margin-top:28px}.gallery-dots button{width:34px;height:4px;border:0;background:rgba(255,255,255,.28);border-radius:99px;padding:0;transition:.3s}.gallery-dots button.active{background:white;width:74px}/* MARKETING / HOW IT WORKS SECTION
+
+Instead of technical information, this section displays information about the product in three short boxes. */
+.promise{padding:140px 0}.promise>h2{max-width:900px}.promise>p{max-width:700px;color:#98a4b4;line-height:1.8;font-size:17px;margin:30px 0 62px}.promise-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.promise-grid>div{padding:30px;border:1px solid var(--line);border-radius:25px;background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.025));min-height:210px}.promise-grid svg{color:#89d0ff}.promise-grid h3{font-size:20px;margin:25px 0 8px}.promise-grid p{color:#8894a5;line-height:1.6;margin:0;font-size:14px}/* TREKMARK TRIP CANVAS - BASE RULES
+
+Trip Canvas consists of images, summary cards and a 3-day plan.
+Later rules will tweak the size to fit better on one screen. */
+.planner{padding:40px 0 130px}.planner-head{display:flex;justify-content:space-between;align-items:flex-start;border-top:1px solid var(--line);padding-top:64px}.planner-head>div:first-child{max-width:790px}.planner h2{font-size:58px}.planner-head p{color:#98a4b4;line-height:1.7;max-width:650px}.icon-btn{border:1px solid var(--line);background:rgba(255,255,255,.05);color:white;width:44px;height:44px;border-radius:50%;display:grid;place-items:center}/* Four small cards for quick reference: fly, stay, eat and do. */
+.trip-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:40px 0}.trip-card{border:1px solid var(--line);border-radius:22px;padding:23px;background:rgba(255,255,255,.04);min-height:190px;display:flex;flex-direction:column}.trip-card svg{color:#8ed1ff;margin-bottom:26px}.trip-card span{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:#758194}.trip-card strong{font-size:16px;margin:9px 0 7px}.trip-card small{color:#737f8f}/* Large lower card with suggested 3-day plan. */
+.itinerary{border:1px solid var(--line);border-radius:28px;padding:32px;background:linear-gradient(180deg,rgba(84,159,221,.08),rgba(255,255,255,.025))}.itinerary-title{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:22px;border-bottom:1px solid var(--line)}.itinerary-title span{font-size:11px;color:#8290a2;text-transform:uppercase;letter-spacing:.1em}.itinerary-title h3{font-size:23px;margin:8px 0}.ai-pill{display:flex;gap:7px;align-items:center;border:1px solid rgba(125,203,255,.28);padding:9px 11px;border-radius:99px;color:#a9dfff!important}.day{display:grid;grid-template-columns:110px 1fr;gap:20px;padding:23px 0;border-bottom:1px solid rgba(255,255,255,.07)}.day:last-child{border-bottom:0}.day>span{color:#82cfff;font-size:12px}.day strong{font-size:15px}.day p{color:#7f8b9c;margin:7px 0 0;font-size:13px}.final-cta{display:flex;justify-content:space-between;align-items:flex-end;padding:100px 0;border-top:1px solid var(--line)}.final-cta h2{font-size:75px}footer{display:flex;justify-content:space-between;padding:30px 0 55px;color:#606a78;border-top:1px solid rgba(255,255,255,.07);font-size:11px}/* AMBIENT BACKGROUND PARTICLES
+
+Positioned on the screen with pointer-events:none to prevent them from
+blocking scrolling or buttons. */
+.particle-field{position:fixed;inset:0;pointer-events:none;z-index:1;overflow:hidden;opacity:.75}.particle-field span{position:absolute;border-radius:50%;background:white;box-shadow:0 0 18px rgba(107,191,255,.8);animation:floatParticle linear infinite}@keyframes floatParticle{0%{transform:translate3d(0,0,0);opacity:.08}40%{opacity:.8}100%{transform:translate3d(35px,-120px,0);opacity:0}}/* IMAGE ANALYSIS / LOADING OVERLAY
+
+Covers the entire screen during the fake AI analysis */
+.analysis-overlay{position:fixed;inset:0;background:rgba(2,5,9,.86);backdrop-filter:blur(18px);z-index:100;display:grid;place-items:center}.scan-card{width:min(560px,88vw);aspect-ratio:4/3;position:relative;border-radius:30px;overflow:hidden;border:1px solid rgba(255,255,255,.17);box-shadow:0 40px 130px rgba(0,0,0,.65)}.scan-card img{width:100%;height:100%;object-fit:cover}.scan-card:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 35%,rgba(2,4,7,.92))}.scan-line{position:absolute;left:4%;right:4%;height:2px;top:14%;background:linear-gradient(90deg,transparent,#78d5ff,white,#78d5ff,transparent);box-shadow:0 0 24px #79d6ff;z-index:3;animation:scan 1.7s ease-in-out infinite alternate}.scan-copy{position:absolute;z-index:4;left:30px;bottom:27px}.scan-copy span{display:flex;align-items:center;gap:8px;color:#92d9ff;font-size:11px;text-transform:uppercase;letter-spacing:.1em}.scan-copy h3{font-size:27px;margin:8px 0}.scan-copy p{color:#a2acb8;margin:0}@keyframes scan{to{top:71%}}
+/* TABLET / SMALL LAPTOP BREAKPOINT
+
+Multi column layouts start to collapse at this point */
+@media(max-width:980px){.hero{grid-template-columns:1fr}.hero-copy{padding-bottom:0}.globe-stage{margin-top:-55px;transform:scale(.86)}.destination-dock{bottom:65px}.promise-grid,.trip-grid{grid-template-columns:1fr 1fr}.selected-copy{padding:42px}.nav-links a{display:none}.final-cta{align-items:flex-start;gap:35px;flex-direction:column}}
+/* MOBILE BREAKPOINT
+
+Large text and multi column layouts are scaled down for smaller screens. */
+@media(max-width:640px){.shell{width:min(100% - 28px,1240px)}.nav{height:66px}.hero{min-height:auto}.hero-copy{padding-top:60px}.hero h1{font-size:49px}.hero-copy>p{font-size:15px}.micro-proof{display:none}.globe-stage{height:520px;transform:none;overflow:hidden}.globe-stage canvas{transform:scale(.76)}.destination-dock{width:calc(100vw - 28px);overflow-x:auto;justify-content:flex-start;bottom:10px}.selected-strip{padding-bottom:70px}.selected-card{min-height:450px}.selected-image{background-position:center}.selected-copy{padding:35px}.selected-copy h2{font-size:44px;margin-top:125px}.visual-story{height:560px}.promise{padding:100px 0}.promise h2,.planner h2{font-size:46px}.promise-grid,.trip-grid{grid-template-columns:1fr}.planner-head{gap:20px}.itinerary-title{gap:15px}.day{grid-template-columns:75px 1fr}.final-cta h2{font-size:58px}footer{gap:20px;flex-direction:column}.nav-links{gap:0}.upload-mini{font-size:0}.upload-mini svg{margin:0}}
+
+
+/* DESIGN PASS: GLOBE-DRIVEN HOME PAGE
+
+This decision originated from the transition to have interaction centered
+on the globe as the primary discovery rather than five separate links
+to destinations. */
+
+.hero{
+  min-height:900px;
+  grid-template-columns:.78fr 1.22fr;
+}
+
+.globe-stage{
+  height:790px;
+  overflow:visible;
+}
+
+.globe-stage canvas{
+  filter:drop-shadow(0 34px 65px rgba(0,0,0,.38));
+}
+
+.globe-glow{
+  width:88%;
+  background:
+    radial-gradient(circle,rgba(93,188,255,.25),rgba(34,77,131,.09) 54%,transparent 74%);
+  filter:blur(28px);
+}
+
+.destination-dock{
+  display:none !important;
+}
+
+.globe-hint{
+  position:absolute;
+  z-index:6;
+  bottom:18px;
+  left:50%;
+  transform:translateX(-50%);
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 14px;
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:999px;
+  background:rgba(5,9,14,.58);
+  backdrop-filter:blur(20px);
+  color:#aeb9c8;
+  font-size:11px;
+  white-space:nowrap;
+  box-shadow:0 18px 60px rgba(0,0,0,.25);
+}
+
+.globe-hint-pulse{
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:#8ad8ff;
+  box-shadow:0 0 0 0 rgba(138,216,255,.65);
+  animation:globeHintPulse 1.8s infinite;
+}
+
+@keyframes globeHintPulse{
+  0%{box-shadow:0 0 0 0 rgba(138,216,255,.58)}
+  70%{box-shadow:0 0 0 10px rgba(138,216,255,0)}
+  100%{box-shadow:0 0 0 0 rgba(138,216,255,0)}
+}
+
+.selected-strip{
+  min-height:190px;
+  padding:12px 0 110px;
+}
+
+.selection-prompt{
+  min-height:130px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  text-align:center;
+  border-top:1px solid rgba(255,255,255,.07);
+  color:#687486;
+  gap:8px;
+}
+
+.selection-prompt span{
+  color:#7bcfff;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+  font-size:10px;
+  font-weight:700;
+}
+
+.selection-prompt strong{
+  max-width:560px;
+  color:#8e99a9;
+  font-size:13px;
+  line-height:1.6;
+  font-weight:500;
+}
+
+.final-cta{
+  gap:70px;
+}
+
+.final-cta>div{
+  max-width:800px;
+}
+
+.final-cta p{
+  color:#8f9bab;
+  line-height:1.7;
+  max-width:680px;
+  margin:22px 0 0;
+}
+
+@media(max-width:980px){
+  .hero{
+    min-height:auto;
+  }
+
+  .globe-stage{
+    height:700px;
+    margin-top:-20px;
+    transform:scale(.92);
+  }
+
+  .globe-hint{
+    bottom:44px;
+  }
+}
+
+@media(max-width:640px){
+  .globe-stage{
+    height:560px;
+    margin-top:0;
+    overflow:hidden;
+    transform:none;
+  }
+
+  .globe-stage canvas{
+    transform:scale(.72);
+  }
+
+  .globe-hint{
+    bottom:8px;
+    max-width:calc(100vw - 44px);
+    white-space:normal;
+    text-align:center;
+  }
+
+  .selected-strip{
+    min-height:150px;
+  }
+
+  .final-cta{
+    gap:34px;
+  }
+
+  .final-cta p{
+    font-size:14px;
+  }
+}
+
+
+/* DESIGN PASS: REFINE CALL-OUT AND DESTINATION CARD
+
+Increases the size of the currently selected destination card and adds the
+second action: "See something else" */
+
+.selected-card{
+  min-height:440px;
+}
+
+.selected-copy{
+  min-height:440px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+
+.selected-actions{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.selected-reset{
+  border:1px solid rgba(255,255,255,.10);
+  padding-inline:16px;
+}
+
+.selected-reset:hover{
+  border-color:rgba(255,255,255,.18);
+}
+
+.visual-content{
+  align-items:flex-start;
+}
+
+.gallery-plan{
+  margin-top:24px;
+  padding:13px 18px;
+  border:1px solid rgba(255,255,255,.24);
+  border-radius:999px;
+  background:rgba(5,9,14,.42);
+  color:#fff;
+  backdrop-filter:blur(18px);
+  display:inline-flex;
+  align-items:center;
+  gap:9px;
+  font-weight:650;
+  transition:
+    transform .25s ease,
+    background .25s ease,
+    border-color .25s ease;
+}
+
+.gallery-plan:hover{
+  transform:translateY(-2px);
+  background:rgba(255,255,255,.11);
+  border-color:rgba(255,255,255,.38);
+}
+
+@media(max-width:640px){
+  .selected-card{
+    min-height:500px;
+  }
+
+  .selected-copy{
+    min-height:500px;
+  }
+
+  .selected-actions{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+}
+
+
+/* Balanced pass for realistic-globe implementation */
+.globe-stage canvas{
+  image-rendering:auto;
+  backface-visibility:hidden;
+  transform:translateZ(0);
+}
+
+
+/* GLOBE IMPLEMENTATION NOTES
+
+Previous implementations used more expensive rendering techniques. These
+classes come from the realistic Earth experiment. Some are hidden/overridden
+by the more recently implemented locked-world code further down in the file.
+
+Having this block of code from before is harmless since later selectors
+will take precedence. However, during a production cleanup this code
+could be removed.
+
+===== Smooth realistic globe renderer =====
+
+Still uses the same realistic satellite imagery. The Earth texture
+however now gets moved by the browser compositor rather than being
+re-warped in JavaScript. */
+
+.globe-stage{
+  container-type:size;
+}
+
+.globe-stage canvas{
+  display:none !important;
+}
+
+.smooth-earth-wrap{
+  width:min(700px,92%);
+  aspect-ratio:1;
+  display:grid;
+  place-items:center;
+  position:relative;
+  z-index:3;
+}
+
+.smooth-earth{
+  --earth-x:42%;
+  width:82%;
+  aspect-ratio:1;
+  border-radius:50%;
+  position:relative;
+  overflow:visible;
+  container-type:size;
+  isolation:isolate;
+  filter:drop-shadow(0 32px 60px rgba(0,0,0,.42));
+}
+
+.smooth-earth__texture{
+  position:absolute;
+  inset:0;
+  border-radius:50%;
+  overflow:hidden;
+  background-image:url('https://svs.gsfc.nasa.gov/vis/a000000/a002900/a002915/bluemarble-1024.png');
+  background-size:200% 100%;
+  background-position:var(--earth-x) 50%;
+  background-repeat:repeat-x;
+  will-change:background-position;
+  transform:translateZ(0);
+}
+
+.smooth-earth__texture::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:50%;
+  background:
+    radial-gradient(circle at 34% 28%,rgba(255,255,255,.18),transparent 22%),
+    radial-gradient(circle at 50% 50%,transparent 52%,rgba(0,0,0,.08) 68%,rgba(0,0,0,.58) 100%),
+    linear-gradient(90deg,rgba(0,0,0,.48),transparent 34%,rgba(255,255,255,.025) 68%,rgba(0,0,0,.22));
+  pointer-events:none;
+}
+
+.smooth-earth__lighting{
+  position:absolute;
+  inset:0;
+  border-radius:50%;
+  box-shadow:
+    inset 18px 0 32px rgba(0,0,0,.30),
+    inset -12px 0 24px rgba(255,255,255,.035),
+    inset 0 0 32px rgba(0,0,0,.20);
+  pointer-events:none;
+  z-index:3;
+}
+
+.smooth-earth__atmosphere{
+  position:absolute;
+  inset:-2px;
+  border-radius:50%;
+  border:1.5px solid rgba(139,216,255,.65);
+  box-shadow:
+    0 0 16px rgba(86,188,255,.45),
+    0 0 42px rgba(86,188,255,.16);
+  pointer-events:none;
+  z-index:4;
+}
+
+.smooth-marker{
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:1px;
+  height:1px;
+  padding:0;
+  border:0;
+  background:transparent;
+  color:white;
+  transform-origin:center bottom;
+  transition:opacity .15s linear;
+  will-change:transform,opacity;
+}
+
+.smooth-marker__dot{
+  position:absolute;
+  left:50%;
+  top:0;
+  width:9px;
+  height:9px;
+  border-radius:50%;
+  background:#8bd9ff;
+  transform:translate(-50%,-50%);
+  box-shadow:
+    0 0 0 5px rgba(121,208,255,.12),
+    0 0 17px rgba(113,207,255,.90);
+}
+
+.smooth-marker.active .smooth-marker__dot{
+  background:#fff;
+  box-shadow:
+    0 0 0 6px rgba(255,255,255,.12),
+    0 0 22px rgba(255,255,255,.95);
+}
+
+.smooth-marker__stem{
+  position:absolute;
+  width:1px;
+  height:40px;
+  left:0;
+  bottom:4px;
+  background:linear-gradient(to top,rgba(129,211,255,.15),rgba(157,224,255,.82));
+}
+
+.smooth-marker__card{
+  position:absolute;
+  left:50%;
+  bottom:42px;
+  transform:translateX(-50%);
+  min-width:100px;
+  padding:8px 12px 7px;
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:10px;
+  background:rgba(7,14,22,.90);
+  backdrop-filter:blur(12px);
+  box-shadow:0 14px 28px rgba(0,0,0,.28);
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  text-align:center;
+  white-space:nowrap;
+}
+
+.smooth-marker.active .smooth-marker__card{
+  border-color:rgba(164,224,255,.40);
+  background:rgba(15,25,37,.96);
+}
+
+.smooth-marker__card strong{
+  font-size:11px;
+  font-weight:650;
+  line-height:1.15;
+}
+
+.smooth-marker__card small{
+  font-size:8px;
+  color:rgba(184,197,211,.72);
+  line-height:1.15;
+}
+
+@media(max-width:980px){
+  .smooth-earth-wrap{
+    width:min(650px,96%);
+  }
+}
+
+@media(max-width:640px){
+  .smooth-earth-wrap{
+    width:560px;
+    max-width:120vw;
+  }
+
+  .smooth-earth{
+    width:78%;
+  }
+
+  .smooth-marker__card{
+    min-width:86px;
+    padding:7px 9px 6px;
+  }
+
+  .smooth-marker__card strong{
+    font-size:10px;
+  }
+}
+
+
+/* Marker alignment patch: markers now use the same equirectangular
+projection as the visible NASA texture. This keeps them aligned to
+the landmasses. */
+.smooth-marker{
+  transition:opacity .12s linear;
+}
+
+
+/* CURRENT GLOBE MARKER SYSTEM
+
+Here is the important current system.
+
+The Earth texture and markers all live on the same .locked-world
+layer and are translated all together by JavaScript. Since the
+markers are children of the moving globe they remain tied to their
+geographic locations rather than moving independently.
+
+===== Globe-locked marker system =====
+
+Both the map and markers now live on the same moving world layer.
+No projection takes place and location pins remain locked to
+geography. */
+
+.smooth-earth-wrap,
+.smooth-earth,
+.accurate-earth{
+  display:none !important;
+}
+
+/* Wraps outer sizing for the current globe. Provides a predictable
+square area while still enabling dynamic width adjustment. */
+.locked-earth-shell{
+  width:min(700px,92%);
+  aspect-ratio:1;
+  display:grid;
+  place-items:center;
+  position:relative;
+  z-index:3;
+}
+
+/* Circular viewport. The flat world-map layer appears as a circular Earth
+due to the overflow:hidden property. */
+.locked-earth{
+  position:relative;
+  width:82%;
+  aspect-ratio:1;
+  border-radius:50%;
+  overflow:hidden;
+  isolation:isolate;
+  background:#0b3154;
+  box-shadow:
+    0 0 0 1px rgba(135,213,255,.45),
+    0 0 24px rgba(86,188,255,.35),
+    0 0 70px rgba(86,188,255,.12),
+    0 32px 68px rgba(0,0,0,.42);
+}
+
+/* One horizontal scroll of the equirectangular map.
+The source Earth texture is 2:1 aspect ratio so the width is set to 200%. */
+.locked-world{
+  position:absolute;
+  top:0;
+  width:200%;
+  height:100%;
+  will-change:transform;
+  transform:translate3d(0,0,0);
+}
+
+/* NASA Blue Marble texture. The map itself is the source of truth for
+both the geography and the location markers. */
+.locked-world__texture{
+  position:absolute;
+  inset:0;
+  background-image:url('https://svs.gsfc.nasa.gov/vis/a000000/a002900/a002915/bluemarble-1024.png');
+  background-size:100% 100%;
+  background-position:center;
+  background-repeat:no-repeat;
+}
+
+.locked-earth__lighting{
+  position:absolute;
+  inset:0;
+  z-index:80;
+  border-radius:50%;
+  pointer-events:none;
+  background:
+    radial-gradient(circle at 34% 28%,rgba(255,255,255,.17),transparent 22%),
+    radial-gradient(circle at 50% 50%,transparent 50%,rgba(0,0,0,.08) 68%,rgba(0,0,0,.58) 100%),
+    linear-gradient(90deg,rgba(0,0,0,.44),transparent 34%,rgba(255,255,255,.025) 68%,rgba(0,0,0,.22));
+  box-shadow:
+    inset 18px 0 32px rgba(0,0,0,.28),
+    inset -12px 0 24px rgba(255,255,255,.035);
+}
+
+.locked-earth__atmosphere{
+  position:absolute;
+  inset:0;
+  z-index:90;
+  border-radius:50%;
+  border:1.4px solid rgba(139,216,255,.66);
+  box-shadow:
+    inset 0 0 18px rgba(86,188,255,.08),
+    0 0 18px rgba(86,188,255,.40);
+  pointer-events:none;
+}
+
+/* Marker anchor position is calculated using percentages from actual
+latitude/longitude. This element is within .locked-world so it will
+move in sync with the map texture. */
+.locked-marker{
+  position:absolute;
+  width:1px;
+  height:1px;
+  margin:0;
+  padding:0;
+  border:0;
+  background:transparent;
+  color:#fff;
+  transform:translate(-50%,-100%);
+  z-index:30;
+}
+
+.locked-marker__dot{
+  position:absolute;
+  left:50%;
+  top:0;
+  width:9px;
+  height:9px;
+  border-radius:50%;
+  background:#8bd9ff;
+  transform:translate(-50%,-50%);
+  box-shadow:
+    0 0 0 5px rgba(121,208,255,.13),
+    0 0 18px rgba(113,207,255,.95);
+}
+
+.locked-marker.active .locked-marker__dot{
+  background:#fff;
+  box-shadow:
+    0 0 0 6px rgba(255,255,255,.13),
+    0 0 24px rgba(255,255,255,.96);
+}
+
+.locked-marker__stem{
+  position:absolute;
+  left:0;
+  bottom:4px;
+  width:1px;
+  height:42px;
+  background:linear-gradient(
+    to top,
+    rgba(129,211,255,.12),
+    rgba(157,224,255,.86)
+  );
+}
+
+.locked-marker__card{
+  position:absolute;
+  left:50%;
+  bottom:44px;
+  transform:translateX(-50%);
+  min-width:128px;
+  padding:11px 16px 10px;
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:10px;
+  background:rgba(7,14,22,.91);
+  backdrop-filter:blur(12px);
+  box-shadow:0 14px 28px rgba(0,0,0,.30);
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  text-align:center;
+  white-space:nowrap;
+}
+
+.locked-marker.active .locked-marker__card{
+  border-color:rgba(164,224,255,.42);
+  background:rgba(15,25,37,.97);
+}
+
+.locked-marker__card strong{
+  font-size:15px;
+  line-height:1.15;
+  font-weight:650;
+}
+
+.locked-marker__card small{
+  font-size:11px;
+  line-height:1.15;
+  color:rgba(184,197,211,.72);
+}
+
+@media(max-width:980px){
+  .locked-earth-shell{
+    width:min(650px,96%);
+  }
+}
+
+@media(max-width:640px){
+  .locked-earth-shell{
+    width:560px;
+    max-width:120vw;
+  }
+
+  .locked-earth{
+    width:78%;
+  }
+
+  .locked-marker__card{
+    min-width:88px;
+    padding:7px 9px 6px;
+  }
+
+  .locked-marker__card strong{
+    font-size:10px;
+  }
+}
+
+
+/* ===== Trekmark polish update: larger globe, greater variety of travel experiences, and improved readability ===== */
+
+.hero{
+  grid-template-columns:.84fr 1.16fr;
+  min-height:960px;
+}
+
+.hero-copy>p{
+  max-width:660px;
+}
+
+.globe-stage{
+  height:860px;
+}
+
+.locked-earth-shell{
+  width:min(820px,100%);
+}
+
+.locked-earth{
+  width:88%;
+}
+
+.planner-head p{
+  color:#aab5c4;
+}
+
+/* Trip Canvas top image:
+
+Large images for destination, hotel, restaurant and experience */
+.planner-media{
+  display:grid;
+  grid-template-columns:1.25fr .75fr .75fr;
+  gap:14px;
+  margin:34px 0 26px;
+}
+
+.planner-visual{
+  position:relative;
+  min-height:220px;
+  border-radius:24px;
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.10);
+  background-size:cover;
+  background-position:center;
+  box-shadow:0 18px 55px rgba(0,0,0,.24);
+}
+
+.planner-visual--hero{
+  grid-row:span 2;
+  min-height:454px;
+  background-position:center;
+}
+
+.planner-visual__copy{
+  position:absolute;
+  inset:auto 18px 18px 18px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.planner-visual__copy span{
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+  color:#9ad8ff;
+  font-weight:700;
+}
+
+.planner-visual__copy strong{
+  font-size:20px;
+  line-height:1.15;
+  color:#f8fbff;
+  text-shadow:0 4px 24px rgba(0,0,0,.38);
+}
+
+.trip-grid{
+  margin-top:14px;
+}
+
+.trip-card{
+  background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.035));
+}
+
+.trip-card span{
+  color:#90a0b4;
+}
+
+.trip-card strong{
+  color:#f7fbff;
+}
+
+.trip-card small{
+  color:#b4c0ce;
+  font-weight:500;
+}
+
+.itinerary-title span{
+  color:#a6b6c8;
+}
+
+.day p{
+  color:#a1adbc;
+}
+
+@media(max-width:980px){
+  .hero{
+    grid-template-columns:1fr;
+  }
+
+  .globe-stage{
+    height:760px;
+    transform:none;
+  }
+
+  .locked-earth-shell{
+    width:min(760px,98%);
+  }
+
+  .planner-media{
+    grid-template-columns:1fr 1fr;
+  }
+
+  .planner-visual--hero{
+    grid-column:1 / -1;
+    grid-row:auto;
+    min-height:320px;
+  }
+}
+
+@media(max-width:640px){
+  .hero{
+    min-height:auto;
+  }
+
+  .globe-stage{
+    height:620px;
+  }
+
+  .locked-earth-shell{
+    width:640px;
+    max-width:128vw;
+  }
+
+  .locked-earth{
+    width:82%;
+  }
+
+  .planner-media{
+    grid-template-columns:1fr;
+  }
+
+  .planner-visual,
+  .planner-visual--hero{
+    min-height:220px;
+    grid-column:auto;
+    grid-row:auto;
+  }
+
+  .planner-visual__copy strong{
+    font-size:18px;
+  }
+}
+
+
+/* TRIP CANVAS COMPACT + PRICING PASS
+
+Some spacing has been reduced from the original planner with the intent to
+allow the majority of filled in Trip Canvas content to be visible without
+excessive scrolling. */
+
+.planner{
+  padding:24px 0 78px;
+}
+
+.planner-head{
+  padding-top:38px;
+  margin-bottom:8px;
+}
+
+.planner h2{
+  font-size:clamp(42px,4vw,54px);
+}
+
+.planner-head p{
+  font-size:15px;
+  line-height:1.55;
+  max-width:620px;
+  color:#b9c5d4;
+}
+
+.planner-media{
+  grid-template-columns:1.15fr 0.85fr 0.85fr;
+  grid-template-rows:152px 152px;
+  gap:12px;
+  margin:22px 0 18px;
+}
+
+.planner-visual{
+  min-height:152px;
+  border-radius:20px;
+}
+
+.planner-visual--hero{
+  grid-row:1 / span 2;
+  min-height:316px;
+}
+
+.planner-visual--wide{
+  grid-column:2 / span 2;
+  min-height:152px;
+}
+
+.planner-visual__copy{
+  inset:auto 14px 14px 14px;
+  gap:4px;
+}
+
+.planner-visual__copy span{
+  font-size:10px;
+}
+
+.planner-visual__copy strong{
+  font-size:18px;
+}
+
+.trip-grid{
+  gap:10px;
+  margin:20px 0;
+}
+
+.trip-card{
+  min-height:148px;
+  padding:18px;
+  border-radius:18px;
+}
+
+.trip-card svg{
+  margin-bottom:14px;
+}
+
+.trip-card span{
+  font-size:10px;
+}
+
+.trip-card strong{
+  font-size:15px;
+  line-height:1.3;
+  margin:8px 0 6px;
+}
+
+.trip-card small{
+  color:#d8e2ee;
+  font-size:12px;
+  line-height:1.35;
+}
+
+.itinerary{
+  padding:24px;
+  border-radius:24px;
+}
+
+.itinerary-title{
+  padding-bottom:18px;
+}
+
+.itinerary-title h3{
+  font-size:20px;
+  margin:6px 0 0;
+}
+
+.day{
+  grid-template-columns:84px 1fr;
+  gap:16px;
+  padding:18px 0;
+}
+
+.day strong{
+  font-size:14px;
+}
+
+.day p{
+  font-size:12px;
+  line-height:1.5;
+  color:#aebacc;
+}
+
+@media(max-width:980px){
+  .planner-media{
+    grid-template-columns:1fr 1fr;
+    grid-template-rows:auto;
+  }
+
+  .planner-visual--hero{
+    grid-column:1 / -1;
+    grid-row:auto;
+    min-height:250px;
+  }
+
+  .planner-visual--wide{
+    grid-column:1 / -1;
+  }
+
+  .trip-card{
+    min-height:136px;
+  }
+}
+
+@media(max-width:640px){
+  .planner{
+    padding:20px 0 64px;
+  }
+
+  .planner-head{
+    padding-top:28px;
+  }
+
+  .planner-media{
+    grid-template-columns:1fr;
+    grid-template-rows:auto;
+  }
+
+  .planner-visual,
+  .planner-visual--hero,
+  .planner-visual--wide{
+    min-height:180px;
+    grid-column:auto;
+    grid-row:auto;
+  }
+
+  .trip-card{
+    min-height:auto;
+  }
+}
+
+
+/* TRIP CANVAS READABILITY PASS
+
+Once the planner was made compact, some text became too small/dim. In this
+pass, contrast is increased and the size of important images and text is
+increased. */
+
+.planner{
+  padding:26px 0 82px;
+}
+
+.planner-head{
+  padding-top:40px;
+}
+
+.planner .eyebrow{
+  font-size:12px;
+  color:#8fd6ff;
+}
+
+.planner h2{
+  font-size:clamp(46px,4.4vw,60px);
+}
+
+.planner-head p{
+  font-size:17px;
+  line-height:1.6;
+  color:#d5deea;
+  max-width:720px;
+}
+
+.planner-media{
+  grid-template-columns:1.18fr .82fr .82fr;
+  grid-template-rows:176px 176px;
+  gap:14px;
+  margin:26px 0 20px;
+}
+
+.planner-visual{
+  min-height:176px;
+  border-radius:22px;
+}
+
+.planner-visual--hero{
+  min-height:366px;
+}
+
+.planner-visual--wide{
+  min-height:176px;
+}
+
+.planner-visual__copy{
+  inset:auto 16px 16px 16px;
+}
+
+.planner-visual__copy span{
+  font-size:11px;
+  color:#a9e2ff;
+}
+
+.planner-visual__copy strong{
+  font-size:21px;
+  color:#ffffff;
+}
+
+.trip-grid{
+  gap:12px;
+  margin:22px 0;
+}
+
+.trip-card{
+  min-height:158px;
+  padding:20px;
+}
+
+.trip-card svg{
+  width:22px;
+  height:22px;
+  margin-bottom:15px;
+  color:#8fd7ff;
+}
+
+.trip-card span{
+  font-size:11px;
+  color:#aebcd0;
+}
+
+.trip-card strong{
+  font-size:17px;
+  line-height:1.3;
+  margin:8px 0 7px;
+  color:#ffffff;
+}
+
+.trip-card small{
+  font-size:13px;
+  line-height:1.4;
+  color:#e3ebf5;
+  font-weight:500;
+}
+
+.itinerary{
+  padding:26px;
+}
+
+.itinerary-title span{
+  font-size:11px;
+  color:#b7c5d6;
+}
+
+.itinerary-title h3{
+  font-size:22px;
+  color:#ffffff;
+}
+
+.day{
+  grid-template-columns:90px 1fr;
+  gap:18px;
+  padding:19px 0;
+}
+
+.day>span{
+  font-size:13px;
+  color:#8ed8ff;
+}
+
+.day strong{
+  font-size:15px;
+  color:#ffffff;
+}
+
+.day p{
+  font-size:13px;
+  line-height:1.55;
+  color:#c7d2e0;
+}
+
+@media(max-width:980px){
+  .planner-media{
+    grid-template-columns:1fr 1fr;
+    grid-template-rows:auto;
+  }
+
+  .planner-visual,
+  .planner-visual--wide{
+    min-height:190px;
+  }
+
+  .planner-visual--hero{
+    min-height:280px;
+  }
+}
+
+@media(max-width:640px){
+  .planner h2{
+    font-size:44px;
+  }
+
+  .planner-head p{
+    font-size:15px;
+  }
+
+  .planner-media{
+    grid-template-columns:1fr;
+  }
+
+  .planner-visual,
+  .planner-visual--hero,
+  .planner-visual--wide{
+    min-height:210px;
+  }
+
+  .trip-card strong{
+    font-size:16px;
+  }
+
+  .trip-card small{
+    font-size:12px;
+  }
+}
+
+
+/* ===== Trip canvas rebalance: slightly reduced introduction content, larger images ===== */
+
+.planner h2{
+  font-size:clamp(42px,3.9vw,54px);
+}
+
+.planner-head p{
+  font-size:15px;
+  line-height:1.5;
+  max-width:660px;
+}
+
+.planner-media{
+  grid-template-columns:1.22fr .78fr .78fr;
+  grid-template-rows:196px 196px;
+  gap:14px;
+  margin:28px 0 22px;
+}
+
+.planner-visual{
+  min-height:196px;
+}
+
+.planner-visual--hero{
+  min-height:406px;
+}
+
+.planner-visual--wide{
+  min-height:196px;
+}
+
+@media(max-width:980px){
+  .planner h2{
+    font-size:48px;
+  }
+
+  .planner-head p{
+    font-size:15px;
+  }
+
+  .planner-visual,
+  .planner-visual--wide{
+    min-height:205px;
+  }
+
+  .planner-visual--hero{
+    min-height:300px;
+  }
+}
+
+@media(max-width:640px){
+  .planner h2{
+    font-size:40px;
+  }
+
+  .planner-head p{
+    font-size:14px;
+  }
+
+  .planner-visual,
+  .planner-visual--hero,
+  .planner-visual--wide{
+    min-height:220px;
+  }
+}
+
+
+/* TRIP CANVAS IMAGE-FIRST PASS
+
+Trekmark is a travel planner. Therefore, there should be more images than
+text. In this pass, additional vertical space is returned to the travel
+photos. */
+
+.planner h2{
+  font-size:clamp(38px,3.5vw,48px);
+}
+
+.planner-head p{
+  font-size:14px;
+  line-height:1.45;
+  max-width:620px;
+}
+
+.planner-head{
+  padding-top:34px;
+  margin-bottom:4px;
+}
+
+.planner-media{
+  grid-template-columns:1.28fr .72fr .72fr;
+  grid-template-rows:214px 214px;
+  gap:14px;
+  margin:22px 0 20px;
+}
+
+.planner-visual{
+  min-height:214px;
+}
+
+.planner-visual--hero{
+  min-height:442px;
+}
+
+.planner-visual--wide{
+  min-height:214px;
+}
+
+.planner-visual__copy{
+  inset:auto 16px 15px 16px;
+}
+
+.planner-visual__copy strong{
+  font-size:20px;
+}
+
+.trip-grid{
+  margin-top:18px;
+}
+
+@media(max-width:980px){
+  .planner h2{
+    font-size:44px;
+  }
+
+  .planner-head p{
+    font-size:14px;
+  }
+
+  .planner-visual,
+  .planner-visual--wide{
+    min-height:220px;
+  }
+
+  .planner-visual--hero{
+    min-height:320px;
+  }
+}
+
+@media(max-width:640px){
+  .planner h2{
+    font-size:38px;
+  }
+
+  .planner-head p{
+    font-size:13px;
+  }
+
+  .planner-visual,
+  .planner-visual--hero,
+  .planner-visual--wide{
+    min-height:230px;
+  }
+}
+
+
+/* ===== Using full-width image in Trip canvas ===== */
+
+.planner{
+  width:min(1380px,calc(100% - 36px));
+}
+
+.planner-head{
+  padding-inline:0;
+}
+
+.planner-media{
+  width:100%;
+  grid-template-columns:1.38fr .81fr .81fr;
+  grid-template-rows:224px 224px;
+  gap:14px;
+}
+
+.planner-visual{
+  min-height:224px;
+}
+
+.planner-visual--hero{
+  min-height:462px;
+}
+
+.planner-visual--wide{
+  min-height:224px;
+}
+
+.trip-grid,
+.itinerary{
+  width:100%;
+}
+
+@media(min-width:1200px){
+  .planner{
+    max-width:1420px;
+  }
+}
+
+@media(max-width:980px){
+  .planner{
+    width:min(100% - 28px,1240px);
+  }
+
+  .planner-media{
+    grid-template-columns:1fr 1fr;
+    grid-template-rows:auto;
+  }
+
+  .planner-visual,
+  .planner-visual--wide{
+    min-height:220px;
+  }
+
+  .planner-visual--hero{
+    min-height:320px;
+  }
+}
+
+@media(max-width:640px){
+  .planner{
+    width:min(100% - 20px,1240px);
+  }
+
+  .planner-media{
+    grid-template-columns:1fr;
+  }
+
+  .planner-visual,
+  .planner-visual--hero,
+  .planner-visual--wide{
+    min-height:230px;
+  }
+}
+
+
+/* TRIP CANVAS BIGGER IMAGE PUSH
+
+Another increase in tile size and planner size. The information cards
+remain at the bottom. */
+
+.planner{
+  width:min(1480px,calc(100% - 24px));
+}
+
+.planner-media{
+  grid-template-columns:1.48fr .76fr .76fr;
+  grid-template-rows:244px 244px;
+  gap:16px;
+  margin:22px 0 22px;
+}
+
+.planner-visual{
+  min-height:244px;
+}
+
+.planner-visual--hero{
+  min-height:504px;
+}
+
+.planner-visual--wide{
+  min-height:244px;
+}
+
+.trip-grid{
+  margin-top:20px;
+}
+
+@media(min-width:1400px){
+  .planner{
+    max-width:1500px;
+  }
+}
+
+@media(max-width:980px){
+  .planner{
+    width:min(100% - 24px,1320px);
+  }
+
+  .planner-media{
+    grid-template-columns:1fr 1fr;
+    grid-template-rows:auto;
+    gap:14px;
+  }
+
+  .planner-visual,
+  .planner-visual--wide{
+    min-height:230px;
+  }
+
+  .planner-visual--hero{
+    min-height:340px;
+  }
+}
+
+@media(max-width:640px){
+  .planner{
+    width:min(100% - 16px,1320px);
+  }
+
+  .planner-media{
+    grid-template-columns:1fr;
+  }
+
+  .planner-visual,
+  .planner-visual--hero,
+  .planner-visual--wide{
+    min-height:240px;
+  }
+}
+
+
+/* QUALITY-OF-LIFE PASS: FIXED NAV + TRAVEL BACKGROUND
+
+Introduces permanent navigation and starts the animation for travel. */
+
+body{
+  background:
+    radial-gradient(circle at 18% 10%,rgba(55,122,180,.22),transparent 30%),
+    radial-gradient(circle at 82% 22%,rgba(76,112,176,.14),transparent 28%),
+    radial-gradient(circle at 50% 110%,rgba(20,80,96,.17),transparent 36%),
+    linear-gradient(180deg,#07111d 0%,#06101a 42%,#050b12 100%);
+}
+
+main{
+  position:relative;
+  overflow:hidden;
+  isolation:isolate;
+  padding-top:84px;
+}
+
+/* Fixed navigation override. !important is used here because there are
+long stylesheets with previous navigation styles defined. We want the
+fixed navigation to take precedence here. */
+.nav-fixed{
+  position:fixed;
+  top:0;
+  left:0;
+  right:0;
+  z-index:120;
+  height:72px;
+  background:rgba(6,12,20,.72);
+  border-bottom:1px solid rgba(255,255,255,.08);
+  backdrop-filter:blur(22px) saturate(130%);
+  -webkit-backdrop-filter:blur(22px) saturate(130%);
+  box-shadow:0 8px 30px rgba(0,0,0,.18);
+}
+
+.nav-inner{
+  height:100%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+
+.nav-login{
+  border:1px solid rgba(255,255,255,.10);
+  color:#e8eef6;
+  background:rgba(255,255,255,.035);
+  padding:10px 14px;
+  border-radius:999px;
+  transition:.25s ease;
+}
+
+.nav-login:hover{
+  background:rgba(255,255,255,.08);
+  border-color:rgba(255,255,255,.16);
+}
+
+.travel-bg{
+  position:fixed;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  overflow:hidden;
+}
+
+.travel-bg__orb{
+  position:absolute;
+  border-radius:50%;
+  filter:blur(90px);
+  opacity:.28;
+  animation:travelOrb 16s ease-in-out infinite alternate;
+}
+
+.travel-bg__orb--one{
+  width:420px;
+  height:420px;
+  left:-120px;
+  top:16%;
+  background:rgba(69,152,214,.28);
+}
+
+.travel-bg__orb--two{
+  width:520px;
+  height:520px;
+  right:-180px;
+  bottom:8%;
+  background:rgba(53,127,136,.22);
+  animation-delay:-6s;
+}
+
+@keyframes travelOrb{
+  from{transform:translate3d(0,0,0) scale(1)}
+  to{transform:translate3d(30px,-18px,0) scale(1.08)}
+}
+
+.travel-bg__route{
+  position:absolute;
+  width:520px;
+  height:220px;
+  border:1px dashed rgba(147,210,255,.10);
+  border-left-color:transparent;
+  border-bottom-color:transparent;
+  border-radius:50%;
+  transform:rotate(-12deg);
+  opacity:.55;
+}
+
+.travel-bg__route--one{
+  right:7%;
+  top:17%;
+}
+
+.travel-bg__route--two{
+  left:4%;
+  bottom:13%;
+  transform:rotate(165deg) scale(.85);
+  opacity:.34;
+}
+
+.travel-bg__plane{
+  position:absolute;
+  color:rgba(156,218,255,.18);
+  filter:drop-shadow(0 0 10px rgba(98,189,255,.25));
+  animation:planeTravel 20s linear infinite;
+}
+
+.travel-bg__plane--one{
+  top:19%;
+  left:-4%;
+}
+
+.travel-bg__plane--two{
+  bottom:18%;
+  right:-5%;
+  animation-name:planeTravelReverse;
+  animation-duration:26s;
+  animation-delay:-8s;
+  color:rgba(169,232,217,.15);
+}
+
+@keyframes planeTravel{
+  0%{transform:translate3d(0,0,0) rotate(15deg);opacity:0}
+  8%{opacity:.28}
+  45%{transform:translate3d(55vw,-6vh,0) rotate(14deg);opacity:.2}
+  100%{transform:translate3d(110vw,4vh,0) rotate(18deg);opacity:0}
+}
+
+@keyframes planeTravelReverse{
+  0%{transform:translate3d(0,0,0) rotate(200deg);opacity:0}
+  10%{opacity:.18}
+  50%{transform:translate3d(-55vw,4vh,0) rotate(198deg);opacity:.18}
+  100%{transform:translate3d(-110vw,-4vh,0) rotate(195deg);opacity:0}
+}
+
+.hero,
+.selected-strip,
+.visual-story,
+.promise,
+.planner,
+.final-cta,
+footer,
+.nav{
+  position:relative;
+  z-index:2;
+}
+
+.particle-field{
+  z-index:1;
+}
+
+@media(max-width:640px){
+  main{
+    padding-top:72px;
+  }
+
+  .nav-fixed{
+    height:64px;
+  }
+
+  .nav-login{
+    display:none;
+  }
+
+  .travel-bg__route{
+    opacity:.28;
+  }
+
+  .travel-bg__plane{
+    opacity:.55;
+  }
+}
+
+
+/* QUALITY-OF-LIFE V2: TRUE FIXED NAV + ACTIVE FLIGHT MAP
+
+The navigation bar is now actually at the top of the screen and has a
+high z-index so that it appears above all other content.
+
+Added animated flight paths and moving plane elements to background */
+
+html,
+body{
+  margin:0;
+  padding:0;
+}
+
+body{
+  background:#050910;
+}
+
+main{
+  position:relative;
+  overflow:hidden;
+  isolation:isolate;
+  padding-top:72px;
+  background:
+    radial-gradient(circle at 16% 8%,rgba(36,74,118,.25),transparent 34%),
+    radial-gradient(circle at 84% 18%,rgba(77,42,103,.17),transparent 32%),
+    linear-gradient(
+      180deg,
+      #07101c 0%,
+      #091321 22%,
+      #111425 48%,
+      #171223 66%,
+      #0b1019 84%,
+      #050910 100%
+    );
+}
+
+/* subtle warm sunset wash behind content */
+.travel-bg__sunset{
+  position:absolute;
+  inset:0;
+  background:
+    radial-gradient(ellipse at 50% 44%,rgba(234,119,78,.16),transparent 31%),
+    radial-gradient(ellipse at 58% 49%,rgba(190,82,110,.12),transparent 34%),
+    radial-gradient(ellipse at 36% 47%,rgba(102,76,160,.12),transparent 36%),
+    linear-gradient(
+      180deg,
+      transparent 0%,
+      rgba(44,35,68,.09) 38%,
+      rgba(151,69,67,.08) 56%,
+      rgba(231,119,74,.045) 64%,
+      transparent 79%
+    );
+}
+
+/* fixed bar is now outside main and can no longer be scrolled or pushed down */
+.nav-fixed{
+  position:fixed !important;
+  top:0 !important;
+  left:0 !important;
+  right:0 !important;
+  bottom:auto !important;
+  width:100%;
+  height:72px;
+  margin:0 !important;
+  z-index:1000;
+  background:rgba(4,9,15,.78);
+  border-bottom:1px solid rgba(255,255,255,.09);
+  backdrop-filter:blur(24px) saturate(145%);
+  -webkit-backdrop-filter:blur(24px) saturate(145%);
+  box-shadow:0 10px 34px rgba(0,0,0,.22);
+}
+
+.nav-inner{
+  height:72px;
+}
+
+/* removed old subtle animated plane/flight path */
+.travel-bg__route,
+.travel-bg__plane{
+  display:none !important;
+}
+
+/* decorative animated flight map layer. Paths are purely visual and do
+not correspond to actual flights. */
+.flight-map{
+  position:absolute;
+  inset:0;
+  overflow:hidden;
+  opacity:.95;
+}
+
+/* single animated flight path. Eight instances have varying start times,
+durations and initial positions to avoid repetition in the background. */
+.flight-path{
+  position:absolute;
+  width:280px;
+  height:1px;
+  transform-origin:left center;
+  opacity:0;
+  animation:flightPass 18s linear infinite;
+}
+
+.flight-trail{
+  position:absolute;
+  left:-150px;
+  top:50%;
+  width:155px;
+  height:1px;
+  transform:translateY(-50%);
+  background:linear-gradient(
+    90deg,
+    rgba(112,197,255,0),
+    rgba(112,197,255,.06) 25%,
+    rgba(112,197,255,.28) 72%,
+    rgba(165,225,255,.55)
+  );
+  box-shadow:0 0 12px rgba(99,190,255,.18);
+}
+
+.flight-plane{
+  position:absolute;
+  left:0;
+  top:50%;
+  transform:translate(-50%,-50%) rotate(12deg);
+  color:rgba(180,228,255,.72);
+  filter:drop-shadow(0 0 7px rgba(94,190,255,.42));
+}
+
+/* "active flight" paths similar to a live flight map */
+.flight-path--1{top:17%;left:-8%;animation-duration:19s;animation-delay:-2s;transform:rotate(8deg)}
+.flight-path--2{top:29%;left:-10%;animation-duration:24s;animation-delay:-11s;transform:rotate(-4deg)}
+.flight-path--3{top:43%;left:-9%;animation-duration:21s;animation-delay:-7s;transform:rotate(5deg)}
+.flight-path--4{top:61%;left:-12%;animation-duration:27s;animation-delay:-19s;transform:rotate(-7deg)}
+.flight-path--5{top:75%;left:-8%;animation-duration:23s;animation-delay:-5s;transform:rotate(3deg)}
+.flight-path--6{top:12%;left:-16%;animation-duration:31s;animation-delay:-22s;transform:rotate(-10deg)}
+.flight-path--7{top:53%;left:-13%;animation-duration:29s;animation-delay:-14s;transform:rotate(9deg)}
+.flight-path--8{top:86%;left:-11%;animation-duration:26s;animation-delay:-17s;transform:rotate(-3deg)}
+
+@keyframes flightPass{
+  0%{
+    translate:0 0;
+    opacity:0;
+  }
+  7%{
+    opacity:.65;
+  }
+  45%{
+    opacity:.52;
+  }
+  92%{
+    opacity:.55;
+  }
+  100%{
+    translate:125vw 0;
+    opacity:0;
+  }
+}
+
+/* strengthen and make more noticeable ambient particles */
+.particle-field{
+  opacity:.95;
+}
+
+.particle-field span{
+  background:rgba(210,236,255,.92);
+  box-shadow:
+    0 0 12px rgba(116,201,255,.70),
+    0 0 26px rgba(116,201,255,.22);
+}
+
+@media(max-width:640px){
+  main{
+    padding-top:64px;
+  }
+
+  .nav-fixed,
+  .nav-inner{
+    height:64px;
+  }
+
+  .flight-map{
+    opacity:.72;
+  }
+
+  .flight-path{
+    animation-duration:26s;
+  }
+}
+
+
+/* QUALITY-OF-LIFE V3: NATURAL FLIGHT MOTION + DUSK COLOR BLEND
+
+Initial animation of planes appeared as icon's being dragged horizontally.
+The rules introduced provide curved paths and slight banking to the plane.
+
+Also spreads the warm color from the sunset to the background rather than just producing one bright orange area. */
+
+/* Full page blended dusk color: dark navy, indigo, pastel plum and a limited amount of warm color. Spreads the warmth throughout the page rather than concentrating in one area. */
+main{
+  background:
+    linear-gradient(
+      180deg,
+      #07101a 0%,
+      #0b1420 18%,
+      #111525 40%,
+      #171525 58%,
+      #17131f 72%,
+      #0d1018 88%,
+      #060a10 100%
+    );
+}
+
+.travel-bg__sunset{
+  background:
+    linear-gradient(
+      115deg,
+      rgba(38,76,119,.14) 0%,
+      rgba(57,63,111,.11) 24%,
+      rgba(85,57,103,.10) 46%,
+      rgba(117,66,86,.085) 66%,
+      rgba(118,72,64,.065) 82%,
+      rgba(17,31,47,0) 100%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(19,38,61,.10) 0%,
+      rgba(50,41,68,.08) 45%,
+      rgba(95,54,65,.055) 70%,
+      rgba(11,17,26,0) 100%
+    );
+}
+
+/* Eliminates the single warm "sun spot" look in the previous ambient orbs. */
+.travel-bg__orb--one{
+  background:rgba(50,112,160,.17);
+  opacity:.20;
+}
+
+.travel-bg__orb--two{
+  background:rgba(91,61,115,.14);
+  opacity:.17;
+}
+
+/* Natural active-flight style */
+.flight-path{
+  position:absolute;
+  width:420px;
+  height:160px;
+  opacity:0;
+  animation:flightArc 20s linear infinite;
+  transform-origin:center;
+}
+
+.flight-path::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-top:1px dashed rgba(145,211,255,.13);
+  border-radius:50%;
+  transform:rotate(-10deg);
+}
+
+.flight-trail{
+  display:none;
+}
+
+.flight-plane{
+  position:absolute;
+  left:0;
+  top:50%;
+  color:rgba(184,226,250,.68);
+  filter:drop-shadow(0 0 8px rgba(99,191,255,.32));
+  transform-origin:center;
+}
+
+/* Enters at varying heights and curves for each lane */
+.flight-path--1{top:14%;left:-22%;animation-duration:20s;animation-delay:-3s;transform:rotate(4deg)}
+.flight-path--2{top:26%;left:-26%;animation-duration:25s;animation-delay:-13s;transform:rotate(-7deg)}
+.flight-path--3{top:41%;left:-24%;animation-duration:22s;animation-delay:-8s;transform:rotate(6deg)}
+.flight-path--4{top:57%;left:-29%;animation-duration:28s;animation-delay:-19s;transform:rotate(-5deg)}
+.flight-path--5{top:72%;left:-23%;animation-duration:24s;animation-delay:-6s;transform:rotate(3deg)}
+.flight-path--6{top:9%;left:-32%;animation-duration:31s;animation-delay:-24s;transform:rotate(-11deg)}
+.flight-path--7{top:49%;left:-28%;animation-duration:29s;animation-delay:-15s;transform:rotate(9deg)}
+.flight-path--8{top:84%;left:-27%;animation-duration:27s;animation-delay:-18s;transform:rotate(-4deg)}
+
+@keyframes flightArc{
+  0%{
+    translate:0 0;
+    opacity:0;
+  }
+  8%{
+    opacity:.46;
+  }
+  18%{
+    translate:18vw -2vh;
+  }
+  36%{
+    translate:42vw -5vh;
+  }
+  54%{
+    translate:66vw -2vh;
+  }
+  72%{
+    translate:88vw 3vh;
+  }
+  90%{
+    translate:111vw 6vh;
+    opacity:.42;
+  }
+  100%{
+    translate:128vw 7vh;
+    opacity:0;
+  }
+}
+
+/* Gently banks the actual plane as the path curves */
+.flight-path .flight-plane{
+  animation:planeBank 4.8s ease-in-out infinite alternate;
+}
+
+@keyframes planeBank{
+  0%{
+    transform:translate(-50%,-50%) rotate(5deg);
+  }
+  50%{
+    transform:translate(-50%,-56%) rotate(14deg);
+  }
+  100%{
+    transform:translate(-50%,-48%) rotate(8deg);
+  }
+}
+
+/* Increases readability of promise card body text */
+.promise-grid p{
+  color:#c4cedb;
+  font-size:15px;
+  line-height:1.7;
+}
+
+.promise-grid h3{
+  color:#ffffff;
+}
+
+.promise-grid>div{
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255,255,255,.065),
+      rgba(255,255,255,.032)
+    );
+  border-color:rgba(255,255,255,.13);
+}
+
+/* Also slightly increases contrast in the body text in the marketing copy */
+.promise>p{
+  color:#b8c3d1;
+}
+
+
+/* GALLERY HEIGHT PASS
+
+Increases the height of the cinematic slideshow to better showcase destination photos */
+
+.visual-story{
+  height:780px;
+}
+
+@media(max-width:980px){
+  .visual-story{
+    height:700px;
+  }
+}
+
+@media(max-width:640px){
+  .visual-story{
+    height:620px;
+  }
+}
+
+
+/* SELECTED DESTINATION CARD TEXT PASS
+
+Improves readability of metadata and buttons without increasing the size of the destination name/kicker */
+
+/* Maintain destination name + kicker, increase size of accompanying UI text */
+.destination-meta{
+  font-size:14px;
+}
+
+.destination-meta span{
+  font-size:14px;
+}
+
+.selected-actions .primary,
+.selected-actions .ghost{
+  font-size:15px;
+  padding:14px 20px;
+}
+
+.selected-actions{
+  gap:12px;
+}
+
+@media(max-width:640px){
+  .destination-meta,
+  .destination-meta span{
+    font-size:13px;
+  }
+
+  .selected-actions .primary,
+  .selected-actions .ghost{
+    font-size:14px;
+  }
+}
+
+
+/* TRIP CANVAS CLOSE BUTTON FIX
+
+Adds margin to the X close button at the top to prevent the fixed navbar from visually blocking or only partially covering the button */
+
+.planner-head .icon-btn{
+  margin-top:22px;
+  flex:0 0 auto;
+}
