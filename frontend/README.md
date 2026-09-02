@@ -20,8 +20,8 @@ this file:
 -   fixed navigation
 -   animated travel background
 
-The comments are written in a style that is appropriate for a college
-student. This is so that this file can be used for documentation, code
+The comments are written in a style that is easily understandable. 
+This is so that this file can be used for documentation, code
 review, studying, and presenting the project during a capstone.
 
 ### `src/styles.css`
