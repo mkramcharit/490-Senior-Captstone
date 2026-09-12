@@ -50,9 +50,24 @@ async def predict(file: UploadFile = File(...)):
         )
 
     return {
-        "filename": file.filename,
-        "content_type": file.content_type,
-        "prediction": "placeholder"
+        "landmark": {
+            "id": 417,
+            "name": "Eiffel Tower",
+            "city": "Paris",
+            "country": "France",
+            "latitude": 48.8584,
+            "longitude": 2.2945,
+            "image": "https://..."
+        },
+        "confidence": 0.96,
+        "nearby_landmarks": [],
+        "trip_suggestions": {
+            "flights": [],
+            "hotels": [],
+            "restaurants": [],
+            "best_time_to_visit": None
+        }
     }
+
 
 
