@@ -3,6 +3,7 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from PIL import Image
 from io import BytesIO
+from pydantic import BaseModel
 
 app = FastAPI(title="Trekmark API")
 
