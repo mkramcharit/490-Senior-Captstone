@@ -5,6 +5,13 @@ from PIL import Image
 from io import BytesIO
 from pydantic import BaseModel
 
+# temp add
+from database import engine, Base
+from models import Prediction
+
+Base.metadata.create_all(bind=engine)
+# temp add
+
 app = FastAPI(title="Trekmark API")
 
 @app.get("/")
