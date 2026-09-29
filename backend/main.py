@@ -23,6 +23,35 @@ def root():
 def health_check():
     return {"status": "ok"}
 
+#temp add
+@app.get("/landmark/{landmark_id}")
+def get_landmark(landmark_id: int, db: Session = Depends(get_db)):
+    landmark = (
+        db.query(TrainingData)
+        .filter(TrainingData.landmark_id == landmark_id)
+        .first()
+    )
+
+    if not landmark:
+        return {
+            "error": "Landmark not found",
+            "landmark_id": landmark_id
+        }
+
+    return {
+        "id": landmark.id,
+        "url": landmark.url,
+        "landmark_id": landmark.landmark_id,
+        "category_name": landmark.category_name,
+        "name": landmark.name,
+        "lat": landmark.lat,
+        "lon": landmark.lon,
+        "city": landmark.city,
+        "state": landmark.state,
+        "country": landmark.country
+    }
+    # temp add
+
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
 
@@ -58,35 +87,7 @@ async def predict(file: UploadFile = File(...)):
             detail="Uploaded file is not a valid image."
         )
 
-    #temp add
-@app.get("/landmark/{landmark_id}")
-def get_landmark(landmark_id: int, db: Session = Depends(get_db)):
-    landmark = (
-        db.query(TrainingData)
-        .filter(TrainingData.landmark_id == landmark_id)
-        .first()
-    )
-
-    if not landmark:
-        return {
-            "error": "Landmark not found",
-            "landmark_id": landmark_id
-        }
-
-    return {
-        "id": landmark.id,
-        "url": landmark.url,
-        "landmark_id": landmark.landmark_id,
-        "category_name": landmark.category_name,
-        "name": landmark.name,
-        "lat": landmark.lat,
-        "lon": landmark.lon,
-        "city": landmark.city,
-        "state": landmark.state,
-        "country": landmark.country
-    }
-    # temp add
-
+    
     return {
         "landmark": {
             "id": 417,
