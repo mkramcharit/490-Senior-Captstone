@@ -36,6 +36,7 @@ class Submission(BaseModel):
 def new_submission(submission: Submission):
     """Post method for user submission"""
     with engine.connect() as connection: 
+        # TO-DO: SANITIZE INPUT, REMOVE MENTION OF landmark_id
         connection.execute(text("""
         INSERT INTO user_submissions (url, landmark_id, name, lat, lon, country, city)
         VALUES (:url, :landmark_id, :name, :lat, :lon, :country, :city)"""), 
@@ -43,6 +44,8 @@ def new_submission(submission: Submission):
 
     return {} #TO-DO: FIGURE OUT WHAT RETURN SHOULD BE
 
+# TO-DO: ADMIN NEEDS TO DETERMINE WHAT LANDMARK ID SHOULD BE FOR EACH LANDMARK. USERS WILL ONLY INPUT A LANDMARK NAME
+# THIS MEANS THAT WHEN A USER SUBMITS A LANDMARK, WE NEED TO MAP IT TO THE CORRECT LANDMARK ID IN OUR DATABASE.
 @app.post("/submissions/{submission_id}/approve")
 def approve_submission(submission_id: int):
     """Post for admin approving a submission"""
@@ -75,28 +78,17 @@ def reject_submission(submission_id: int):
     return {} # TO-DO: FIGURE OUT WHAT RETURN SHOULD BE
 
 
-@app.post("/migrate")
-def migrate_approved():
+def move_rejected():
+    """Function to move rejected submissions to the training_data table"""
+
+def move_approved():
+    """Function to move approved submissions to the training_data table"""
+
+# This function can be called at the end of every admin session to push all landmarks that meet he approval threshold
+# to the training_data table
+# TO-DO: we need logic for generating a new unique id for each row once it is inserted into the training data table
+@app.post("/clean")
+def clean_tables():
     """Post method for moving entries from user_submission table to training_data table"""
-    check_query = text("""
-        SELECT landmark_id
-        FROM user_submissions
-        WHERE status t 'approved'
-        GROUP BY landmark_id
-        HAVING COUNT(*) >= :threshold""")
-
-    insert_query = text("""
-        INSERT INTO training_data (id, url, landmark_id, name, lat, lon, country, city)
-        SELECT id, url, landmark_id, name, lat, lon, country, city
-        FROM user_submissions
-        WHERE status = 'approved'
-        AND landmark_id IN (
-        TO-DO: THIS SQL QUERY)""")
-
-    delete_query = text("""
-        TO-DO""")
-    
-    with engine.begin() as connection:
-       # TO-DO: ENGINE SECTION FOR THIS METHOD, IT WILL PROBABLY BE ANNOYING
 
     return {} # TO-DO: FIGURE OUT WHAT RETURN SHOULD BE
