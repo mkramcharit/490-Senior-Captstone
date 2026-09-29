@@ -5,13 +5,9 @@ from PIL import Image
 from io import BytesIO
 from pydantic import BaseModel
 
-# temp add
-from fastapi import Depends
-from sqlalchemy.orm import Session
-
-from database import get_db
-from models import TrainingData
-# temp add
+#temp add
+from database import get_landmark
+#temp add
 
 app = FastAPI(title="Trekmark API")
 
@@ -25,31 +21,17 @@ def health_check():
 
 #temp add
 @app.get("/landmark/{landmark_id}")
-def get_landmark(landmark_id: int, db: Session = Depends(get_db)):
-    landmark = (
-        db.query(TrainingData)
-        .filter(TrainingData.landmark_id == landmark_id)
-        .first()
-    )
+def landmark(landmark_id: int):
 
-    if not landmark:
+    result = get_landmark(landmark_id)
+
+    if not result:
         return {
             "error": "Landmark not found",
             "landmark_id": landmark_id
         }
 
-    return {
-        "id": landmark.id,
-        "url": landmark.url,
-        "landmark_id": landmark.landmark_id,
-        "category_name": landmark.category_name,
-        "name": landmark.name,
-        "lat": landmark.lat,
-        "lon": landmark.lon,
-        "city": landmark.city,
-        "state": landmark.state,
-        "country": landmark.country
-    }
+    return dict(result)
     # temp add
 
 @app.post("/predict")
