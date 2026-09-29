@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from sqlalchemy import create_engine, text
 import pandas as pd
 
-app = FastAPI(title="Admin Landmark Review API")
+app = FastAPI(title="TO-DO: APPNAME")
 
 engine = create_engine(
     "postgresql+psycopg2://landmarks_owner:npg_jcmM5DsKEr1b@ep-dry-breeze-a5wcb604-pooler.us-east-2.aws.neon.tech/landmarks?sslmode=require&channel_binding=require"
@@ -57,7 +57,8 @@ def approve_submission(submission_id: int):
         raise HTTPException(404, detail = "Error: No matching item") # TO-DO: FIGURE OUT WHAT EXCEPTION TO RAISE HERE
 
     return {} # TO-DO: FIGURE OUT WHAT RETURN SHOULD BE
-    
+   
+# TO-DO: consider changing this so that we keep the rejected submissions? so we don't get duplicates 
 @app.post("/admin/{submission_id}/reject")
 def reject_submission(submission_id: int):
     """Post for when admin rejects a submission"""
@@ -73,13 +74,14 @@ def reject_submission(submission_id: int):
 
     return {} # TO-DO: FIGURE OUT WHAT RETURN SHOULD BE
 
+
 @app.post("/migrate")
 def migrate_approved():
     """Post method for moving entries from user_submission table to training_data table"""
-    qualify_query = text("""
+    check_query = text("""
         SELECT landmark_id
         FROM user_submissions
-        WHERE status = 'approved'
+        WHERE status t 'approved'
         GROUP BY landmark_id
         HAVING COUNT(*) >= :threshold""")
 
@@ -91,23 +93,10 @@ def migrate_approved():
         AND landmark_id IN (
         TO-DO: THIS SQL QUERY)""")
 
-    # TO-DO: EITHER MARK THE ENTRY AND KEEP IT IN THE OLD TABLE, OR DELETE IT ENTIRELY. DECIDE
-    mark_query = text("""
-        UPDATE user_submissions
-        SET status = 'migrated'
-        WHERE status = 'approved'
-        AND landmark_id IN (
-        TO-DO: THIS SQL QUERY)""")
+    delete_query = text("""
+        TO-DO""")
     
-    with engine.begin() as connection: # This should aboslutely be "begin"
+    with engine.begin() as connection:
        # TO-DO: ENGINE SECTION FOR THIS METHOD, IT WILL PROBABLY BE ANNOYING
 
     return {} # TO-DO: FIGURE OUT WHAT RETURN SHOULD BE
-
-@app.get("/submission/pending")
-def list_pending():
-    with engine.begin() as connection: #TO-DO: SHOULD THIS BE CONNECT? MAYBE BEGIN?
-        rows = connection.execute(text("SELECT * FROM user_submissions WHERE status = 'pending'"))
-    return {} # TO-DO: FIGURE OUT WHAT RETURN SHOULD BE
-
-x
