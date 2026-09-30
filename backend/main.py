@@ -1,7 +1,11 @@
 # backend/main.py
 
 import sys
-from pathlib import Path
+
+sys.path.insert(
+    0,
+    r"C:\Users\bryce\OneDrive\Desktop\Senior Capstone\490-Senior-Captstone"
+)
 
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from PIL import Image
