@@ -44,7 +44,7 @@ def test_index_storage(tmp_path):
     index.save(target)
     restored = ReferenceIndex.load(target, "test-model")
     assert restored.predict([1, 0]) == index.predict([1, 0])
-    with pytest.raises(ValueError, match="differs"):
+    with pytest.raises(ValueError, match="does not match"):
         ReferenceIndex.load(target, "other-model")
     with pytest.raises(FileExistsError):
         index.save(target)
@@ -65,6 +65,7 @@ def test_invalid_inputs():
     index = ReferenceIndex(2, "test")
     with pytest.raises(ValueError, match="empty"):
         index.predict([1, 0])
+    index.add([[1,0]], [Reference(417, "a")])
     with pytest.raises(ValueError):
         index.add([[1,0]], [Reference(417, "a")])
     assert index.index.ntotal == 1

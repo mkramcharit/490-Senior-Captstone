@@ -2193,3 +2193,10 @@ Adds margin to the X close button at the top to prevent the fixed navbar from vi
   margin-top:22px;
   flex:0 0 auto;
 }
+
+.recognition:not(:empty) { padding-top: 2rem; padding-bottom: 2rem; }
+.landmark-table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; background: rgba(255,255,255,.04); }
+.landmark-table caption { text-align: left; padding: .75rem 0; }
+.landmark-table th, .landmark-table td { padding: .85rem 1rem; text-align: left; border-bottom: 1px solid rgba(255,255,255,.15); overflow-wrap: anywhere; }
+.landmark-table th { width: 35%; }
+.recognition-error { padding: 1rem; border: 1px solid #f99; border-radius: .75rem; color: #ffbcbc; }

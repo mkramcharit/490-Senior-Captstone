@@ -622,33 +622,52 @@ function App() {
   
   
   
-  // Prototype image upload flow.
-  //
-  // Currently:
-  //
-  // 1. Read selected image file,
-  // 2. Generate URL for local preview of image,
-  // 3. Show scanning screen,
-  // 4. Pause for 1.8 seconds,
-  // 5. Simulate AI recognizing Paris,
-  // 6. Show Trip Canvas
-  //
-  // Steps 4-5 in the app will use the backend /predict API.
-  //
-  // Optional chaining on files?.[0] will help handle the case when the user opens
-  // the file picker then cancels. While this is a small check, it will prevent an
-  // error from occurring when encountering completely normal user input.
-  const onUpload = (e) => {
+  const [recognition, setRecognition] = useState(null);
+  const [uploadError, setUploadError] = useState('');
+  const uploadRequest = useRef(null);
+  useEffect(() => () => { uploadRequest.current?.abort(); }, []);
+  useEffect(() => () => {
+    if (uploadPreview) URL.revokeObjectURL(uploadPreview);
+  }, [uploadPreview]);
+
+  const onUpload = async (e) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
+    uploadRequest.current?.abort();
+    const controller = new AbortController();
+    uploadRequest.current = controller;
+    setRecognition(null);
+    setUploadError('');
+    setSelected(null);
+    setDetailOpen(false);
+    if (file.size > 10 * 1024 * 1024) {
+      setAnalyzing(false);
+      setUploadError('Choose an image smaller than 10 MB.');
+      return;
+    }
     setUploadPreview(URL.createObjectURL(file));
     setAnalyzing(true);
-    setTimeout(() => {
-      setAnalyzing(false);
-      setSelected(destinations[2]);
-      setDetailOpen(true);
-      setTimeout(() => document.querySelector('#planner')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
-    }, 1800);
+    const form = new FormData();
+    form.append('image', file);
+    const timeout = window.setTimeout(() => controller.abort(), 120000);
+    try {
+      const response = await fetch('/api/predict', {
+        method: 'POST', body: form, signal: controller.signal,
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(typeof result.detail === 'string' ? result.detail : 'Unable to identify this image.');
+      if (uploadRequest.current !== controller) return;
+      setRecognition(result);
+      window.setTimeout(() => document.querySelector('#recognition')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+    } catch (error) {
+      if (uploadRequest.current === controller) {
+        setUploadError(error.name === 'AbortError' ? 'Recognition timed out. Please try again.' : error.message || 'Unable to reach the recognition service.');
+      }
+    } finally {
+      window.clearTimeout(timeout);
+      if (uploadRequest.current === controller) setAnalyzing(false);
+    }
   };
 
   return (
@@ -746,6 +765,31 @@ function App() {
         When a destination is selected, this becomes the large image
         with buttons "Build this trip" and "See something else".
       */}
+      <section className="recognition shell" id="recognition" aria-live="polite">
+        {uploadError && <p role="alert" className="recognition-error">{uploadError}</p>}
+        {recognition && <>
+          <h2>Landmark identification</h2>
+          <table className="landmark-table">
+            <caption>Information for the closest landmark match</caption>
+            <thead><tr><th scope="col">Field</th><th scope="col">Information</th></tr></thead>
+            <tbody>
+              {[
+                ['Landmark ID', recognition.landmark_id],
+                ['Confidence score', `${(recognition.confidence * 100).toFixed(1)}%`],
+                ['Name', recognition.landmark.name],
+                ['Category', recognition.landmark.category_name],
+                ['City', recognition.landmark.city],
+                ['State', recognition.landmark.state],
+                ['Country', recognition.landmark.country],
+                ['Latitude', recognition.landmark.lat],
+                ['Longitude', recognition.landmark.lon],
+              ].map(([label, value]) => <tr key={label}><th scope="row">{label}</th><td>{value ?? 'Not available'}</td></tr>)}
+            </tbody>
+          </table>
+          <p>Confidence reflects visual similarity and agreement among reference images, not a guaranteed identification.</p>
+        </>}
+      </section>
+
       <section className="selected-strip shell" id="discover">
         {/* mode="wait" causes Framer Motion to remove the previous card completely
             before animating the new one. This ensures a clean transition and avoids

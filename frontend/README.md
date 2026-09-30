@@ -75,9 +75,6 @@ Typically this is:
 http://localhost:5173/
 ```
 
-## Current prototype limitation
+## Recognition integration
 
-There is currently no backend. Prices, confidence scores, travel
-recommendations, itinerary details and image recognition are all
-prototype/mock data. The frontend is structured to allow these values to
-be replaced later by data from the FastAPI backend.
+Image uploads now call the Python backend and display database landmark details and model confidence in a table. See the root README for backend setup and the required reference index. Globe presets, trip prices, and itineraries remain demo data.
