@@ -4,7 +4,7 @@ from fastapi import FastAPI, UploadFile, File, HTTPException
 from PIL import Image
 from io import BytesIO
 from pydantic import BaseModel
-from landmark import LandmarkPipeline
+from landmark_ml import LandmarkPipeline
 
 #temp add
 from database import get_landmark
