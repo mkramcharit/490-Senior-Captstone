@@ -1,11 +1,15 @@
 # backend/main.py
 
+import sys
+from pathlib import Path
+
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from PIL import Image
 from io import BytesIO
 from pydantic import BaseModel
-from landmark_ml import LandmarkPipeline
+
 from database import get_landmark
+from landmark_ml import LandmarkPipeline
 
 app = FastAPI(title="Trekmark API")
 
