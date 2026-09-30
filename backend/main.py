@@ -5,10 +5,7 @@ from PIL import Image
 from io import BytesIO
 from pydantic import BaseModel
 from landmark_ml import LandmarkPipeline
-
-#temp add
 from database import get_landmark
-#temp add
 
 app = FastAPI(title="Trekmark API")
 
