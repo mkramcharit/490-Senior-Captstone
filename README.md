@@ -27,7 +27,28 @@ Alternatively, build it once from labeled reference images using a JSON array su
 .\.venv\Scripts\python.exe -m landmark_ml build references.json artifacts/landmarks --model dinov2-small
 ```
 
-No reference index was present during integration. Until one is supplied, uploads return a clear 503 message. No fabricated match is substituted. The confidence is the existing model's similarity-times-agreement score, not a calibrated probability. The globe and travel planner retain their separate demo data.
+The initial integration had no reference index. On October 1, 2026, a first real index was built locally from 15 Neon-labeled Wikimedia photos covering three landmarks. Missing index files still cause uploads to return a clear 503 message. The confidence is the existing model's similarity-times-agreement score, not a calibrated probability. The globe and travel planner retain their separate demo data.
+
+## Collect and verify real reference data
+
+Neon's `public.training_data` contains `id`, `url`, `landmark_id`, and landmark metadata. The collection tool reads these rows directly, preserves the real IDs and source URLs, validates downloaded image files, records SHA-256 hashes, and separates reference photos from held-out photos. It currently supports Wikimedia image URLs. Database labels can include interiors or nearby objects; review the photos before treating their labels as reliable.
+
+Example for Stirling Castle (104169), Monza Cathedral (25719), and Mount Vernon (73107):
+
+```powershell
+.\.venv\Scripts\python.exe scripts/collect_images.py artifacts/reference-data-v3 --landmark-ids 104169 25719 73107
+.\.venv\Scripts\python.exe -m landmark_ml build artifacts/reference-data-v3/manifest.json artifacts/landmarks-v3 --model dinov2-small
+$env:LANDMARK_INDEX_PATH = 'artifacts/landmarks-v3'
+.\.venv\Scripts\python.exe scripts/verify_recognition.py artifacts/reference-data-v3/holdouts.json artifacts/recognition-report-v3.json
+```
+
+The first command requires network access to Neon and Wikimedia. It downloads standard 960-pixel thumbnails, pauses on rate limits, and requests five reference photos and two held-out photos per landmark; unavailable URLs are recorded in `download_failures.json`. Partial collections are saved and reported as incomplete. Both collection and index commands require a new output directory. The verification command uses the real API endpoint, model, index, and database lookup, rejects exact reference-image overlap, writes each response and expected ID to the report, and exits unsuccessfully if any held-out prediction fails. It verifies API behavior; browser upload/rendering still needs a separate check.
+
+The completed local collection is `artifacts/reference-data-v2`: five references per landmark and five held-out photos total (two Stirling Castle, one Monza Cathedral, two Mount Vernon). The working index is `artifacts/landmarks/images.faiss` plus `references.json`. Evaluation through the real API and Neon returned HTTP 200 for all five uploads and the correct ID for three of five: both Stirling Castle photos and one Mount Vernon photo. The Monza garden photo and Mount Vernon detail photo were misidentified. These broad category labels include grounds and objects; this is an initial working index, not production-quality recognition or coverage of every landmark.
+
+Tracked provenance manifests, download failures, and the full evaluation report are in `docs/reference-data/`. Local `artifacts/trekmark-reference-index-v1.zip` contains the index, photos, manifests, contact sheet, and report for sharing with teammates. Extract it into `artifacts/` to restore the default index location. The DINOv2 weights must match the saved index signature. Restart the backend after installing or replacing the index.
+
+`artifacts/` is ignored by Git. Share the collection and built index separately, or provide a download location, so teammates can reproduce the same result. The index metadata currently stores absolute reference paths, so preserve the collection locally when rerunning the overlap verification.
 
 ## Tests
 
