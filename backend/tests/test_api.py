@@ -30,8 +30,23 @@ def test_upload_predicts_then_looks_up_same_id(client, photo, monkeypatch):
     response = client.post("/api/predict", files={"image": ("image.png", photo, "image/png")})
     assert response.status_code == 200
     assert response.json()["confidence"] == .87
+    assert response.json()["match_score"] == .87
+    assert response.json()["confidence_probability"] is None
+    assert response.json()["confidence_calibrated"] is False
     assert response.json()["landmark"]["name"] == "Test landmark"
     assert seen == ["predict", 42]
+
+
+@pytest.mark.parametrize("probability,status", [(.72, 200), (float("nan"), 503), (1.2, 503)])
+def test_calibrated_probability(client, photo, monkeypatch, probability, status):
+    monkeypatch.setattr(api, "get_pipeline", lambda: SimpleNamespace(predict=lambda _: {
+        "landmark_id": 42, "confidence": .2, "confidence_probability": probability}))
+    monkeypatch.setattr(api, "lookup_landmark", lambda key: {"landmark_id": key})
+    response = client.post("/api/predict", files={"image": ("x.png", photo)})
+    assert response.status_code == status
+    if status == 200:
+        assert response.json()["confidence_probability"] == .72
+        assert response.json()["match_score"] == .2
 
 def test_invalid_image(client):
     assert client.post("/api/predict", files={"image": ("x.png", b"bad")}).status_code == 422

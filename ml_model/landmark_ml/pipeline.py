@@ -8,6 +8,7 @@ class LandmarkPipeline:
             raise ValueError("Embedder and reference index are incompatible")
         self.embedder = embedder
         self.index = index
+        self.calibrator = None
 
     @classmethod
     def build(cls, references: list[Reference], model_path="dinov2-small", batch_size=16, device="cpu"):
@@ -32,10 +33,20 @@ class LandmarkPipeline:
     @classmethod
     def load(cls, directory, model_path="dinov2-small", device="cpu"):
         embedder = DinoV2Embedder(model_path, device)
-        return cls(embedder, ReferenceIndex.load(directory, embedder.signature))
+        pipeline = cls(embedder, ReferenceIndex.load(directory, embedder.signature))
+        calibration_path = Path(directory) / "calibration.json"
+        if calibration_path.is_file():
+            from .calibration import load
+            pipeline.calibrator = load(calibration_path, pipeline.index)
+        return pipeline
 
     def predict(self, image: ImageInput, top_k: int = 5) -> dict:
-        return self.index.predict(self.embedder.embed([image])[0], top_k)
+        result = self.index.predict(self.embedder.embed([image])[0], top_k)
+        if self.calibrator is not None and top_k == self.calibrator["top_k"]:
+            from .calibration import probability
+            result["confidence_probability"] = probability(self.calibrator, result["match_score"])
+            result["confidence_calibrated"] = True
+        return result
 
     def save(self, directory):
         self.index.save(directory)

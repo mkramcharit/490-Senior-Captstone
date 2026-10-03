@@ -75,6 +75,11 @@ def predict(image: UploadFile = File(...)):
         confidence = float(prediction["confidence"])
         if not math.isfinite(confidence) or not 0 <= confidence <= 1:
             raise ValueError("Invalid confidence")
+        probability = prediction.get("confidence_probability")
+        if probability is not None:
+            probability = float(probability)
+            if not math.isfinite(probability) or not 0 <= probability <= 1:
+                raise ValueError("Invalid calibrated probability")
         landmark = lookup_landmark(landmark_id)
     except HTTPException:
         raise
@@ -87,6 +92,9 @@ def predict(image: UploadFile = File(...)):
     if landmark is None:
         raise HTTPException(404, "The predicted landmark has no matching database record.")
     return {"landmark_id": landmark_id, "confidence": confidence,
+            "match_score": confidence, "confidence_probability": probability,
+            "confidence_calibrated": probability is not None,
+            "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation." if probability is not None else "No compatible calibrator installed.",
             "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
             "landmark": landmark}
 

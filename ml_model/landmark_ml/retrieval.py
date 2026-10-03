@@ -67,7 +67,8 @@ class ReferenceIndex:
         similarity = max(groups[winner])
         agreement = len(groups[winner]) / len(matches)
         confidence = max(0.0, similarity) * agreement
-        return {"landmark_id": winner, "confidence": confidence,
+        return {"landmark_id": winner, "confidence": confidence, "match_score": confidence,
+                "confidence_probability": None, "confidence_calibrated": False,
                 "similarity": similarity, "agreement": agreement,
                 "top_matches": matches}
 
@@ -98,4 +99,3 @@ class ReferenceIndex:
         if index.ntotal != len(result.references) or not result.references:
             raise ValueError("Index and reference mapping counts do not match or are empty")
         return result
-    

@@ -22,12 +22,16 @@ def main():
     mapping = json.loads((index_directory / "references.json").read_text(encoding="utf-8"))
     reference_hashes = {hashlib.sha256(Path(row["image_path"]).read_bytes()).hexdigest()
                         for row in mapping["references"]}
+    calibration_file = index_directory / "calibration.json"
+    calibration_hashes = set()
+    if calibration_file.is_file():
+        calibration_hashes = set(json.loads(calibration_file.read_text(encoding="utf-8"))["calibration_image_hashes"])
     results = []
     with TestClient(app) as client:
         for row in rows:
             path = args.holdouts.parent / row["image_path"]
-            if hashlib.sha256(path.read_bytes()).hexdigest() in reference_hashes:
-                parser.error(f"Held-out photo is also in the reference index: {path.name}")
+            if hashlib.sha256(path.read_bytes()).hexdigest() in reference_hashes | calibration_hashes:
+                parser.error(f"Held-out photo overlaps reference or calibration data: {path.name}")
             response = client.post("/api/predict", files={"image": (path.name, path.read_bytes(), "image/jpeg")})
             payload = response.json()
             correct = response.status_code == 200 and payload.get("landmark_id") == row["landmark_id"]
@@ -37,6 +41,11 @@ def main():
             print(json.dumps(result), flush=True)
     report = {"evaluation": "held-out images through real FastAPI endpoint and Neon lookup",
               "correct": sum(row["correct"] for row in results), "total": len(results), "results": results}
+    scored = [r for r in results if r["status"] == 200 and r["response"].get("confidence_probability") is not None]
+    if scored:
+        from landmark_ml.calibration import metrics
+        report["calibration_metrics"] = metrics([r["response"]["confidence_probability"] for r in scored], [r["correct"] for r in scored])
+    report["calibrated_prediction_count"] = len(scored)
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(json.dumps(report, indent=2), encoding="utf-8")
     if not all(row["correct"] for row in results):

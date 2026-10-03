@@ -1,0 +1,55 @@
+{
+  "sample_count": 60,
+  "accuracy": 0.38333333333333336,
+  "source_group_count": 47,
+  "indexed_landmark_ids": [
+    "104169",
+    "25719",
+    "73107"
+  ],
+  "tested_landmark_ids": [
+    "104169",
+    "189446",
+    "25719",
+    "73107",
+    "86294"
+  ],
+  "mean_probability": 0.42520797609191613,
+  "expected_calibration_error": 0.08194740752710304,
+  "raw_brier": 0.2096099103362314,
+  "calibrated_brier": 0.10903676972219453,
+  "constant_baseline_brier": 0.23990414763056522,
+  "calibrated_minus_raw_brier_bootstrap_interval_95": [
+    -0.18579802217126695,
+    -0.03235223805062618
+  ],
+  "meets_predeclared_descriptive_checks": true,
+  "per_landmark": {
+    "104169": {
+      "count": 15,
+      "correct": 12,
+      "mean_probability": 0.6696833173063196
+    },
+    "189446": {
+      "count": 15,
+      "correct": 0,
+      "mean_probability": 0.26655522628326955
+    },
+    "25719": {
+      "count": 2,
+      "correct": 2,
+      "mean_probability": 0.8510428146964445
+    },
+    "73107": {
+      "count": 13,
+      "correct": 9,
+      "mean_probability": 0.5859894070578353
+    },
+    "86294": {
+      "count": 15,
+      "correct": 0,
+      "mean_probability": 0.1432634993684256
+    }
+  },
+  "scope": "Neon-labeled Wikimedia benchmark with selected indexed and unindexed landmarks; not arbitrary uploads"
+}
