@@ -8,7 +8,6 @@ import pytest
 from landmark_ml import LandmarkPipeline, Reference
 from landmark_ml.embeddings import read_image
 
-
 def test_image_preprocessing():
     image = Image.new("L", (20, 10), 128)
     exif = image.getexif()
@@ -22,10 +21,9 @@ def test_image_preprocessing():
     with pytest.raises(OSError):
         read_image(b"not an image")
 
-
 @pytest.mark.integration
 def test_full_pipeline(tmp_path):
-    model = Path(__file__).resolve().parents[2] / "dinov2-small"
+    model = Path(__file__).resolve().parents[1] / "dinov2-small"
     if not (model / "model.safetensors").is_file():
         pytest.skip("Local DINOv2 weights are not installed")
     rng = np.random.default_rng(42)
