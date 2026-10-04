@@ -4,47 +4,57 @@
 # 3. Once we have enough (30) approved images for a landmark in our holding table,
 #    we want to move all the related rows from the holding table to the actual training_data table
 
-from fastapi import FastAPI, HTTPException, WebSocketException
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel
 from sqlalchemy import create_engine, text
-import pandas as pd
+from dotenv import load_dotenv
+import boto3
+import os
+import uuid
 
-app = FastAPI(title="TO-DO: APPNAME")
+load_dotenv()
 
-engine = create_engine(
-    "postgresql+psycopg2://landmarks_owner:npg_jcmM5DsKEr1b@ep-dry-breeze-a5wcb604-pooler.us-east-2.aws.neon.tech/landmarks?sslmode=require&channel_binding=require"
+BUCKET_NAME = "image-bucket"
+BASE_URL = os.environ["ENDPOINT_URL_S3"] + "/" + BUCKET_NAME
+
+client = boto3.client(
+    "s3",
+    region=os.environ["REGION"],
+    endpoint_url_s3=os.environ["ENDPOINT_URL_S3"],
+    token_id=os.environ["TOKEN_ID"],
+    s3_secret_access_key=os.environ["S3_SECRET_ACCESS_KEY"],
 )
 
-APPROVAL_THRESHOLD = 30
+app = FastAPI(title="Ladmark Submission API")
+engine = create_engine(os.environ["DATABASE_URL"])  # Neon connection object
 
-# TO-DO: ALL OF THESE FUNCTIONS PROBABLY NEED SOME INPUT SANITIZATION.
 
+def upload_image(image: UploadFile):
+    """Function to upload image to S3 bucket"""
+    extension = image.filename.split(".")[-1] if "." in image.filename else "jpg"
 
-# TO-DO: CURRENTLY, WE ARE JUST USING URL:STR HERE, BUT WILL THE USER BE SUBMITTING URLS, OR IMAGES?
-# OUR TABLES DON'T STORE IMAGES. MUST CONSIDER EITHER THIRD PARTY STORAGE WITH A URL LINKING TO IT
-# THAT WE SHUFFLE EVERYTHING INTO, THIS COMES WITH A LOT OF HEADACHES (SECURITY, NEW DATABASE?).
-# MAYBE CONSIDER JUST STORING IT IN THE DATABASE. IF SO, GOTTA CHANGE URL:STR
-class Submission(BaseModel):
-    url: str
-    landmark_id: int
-    name: str
-    lat: float
-    lon: float
-    country: str
-    city: str
+    key = f"{uuid.uuid4().hex}{extension}"
+    client.upload_fileobj(image.file, BUCKET_NAME, key)
+
+    return f"{BASE_URL}/{key}"
 
 
 @app.post("/submission")
-def new_submission(submission: Submission):
+def new_submission(
+    image: UploadFile = File(...),
+    name: str = Form(..., description="Name of the landmark"),
+    lat: float = Form(...),
+    lon: float = Form(...),
+    city: str | None = Form(None),
+    state: str | None = Form(None),
+    country: str = Form(...),
+):
     """Post method for user submission"""
-    with engine.connect() as connection:
-        # TO-DO: SANITIZE INPUT, REMOVE MENTION OF landmark_id
-        connection.execute(
-            text("""
-        INSERT INTO user_submissions (url, landmark_id, name, lat, lon, country, city)
-        VALUES (:url, :landmark_id, :name, :lat, :lon, :country, :city)"""),
-            submission.model_dump(),
-        )  # Converts pydandtic stuff into a python dictionary
+    url = upload_image(image)
+    with engine.begin() as connection:
+        connection.execute(text("""
+        INSERT INTO user_submissions (url, name, lat, lon, city, state, country)
+        VALUES (:url, :name, :lat, :lon, :city, :state, :country)"""))
 
     return "Accepted"
 
@@ -79,7 +89,7 @@ def reject_submission(submission_id: int):
         result = connection.execute(
             text("""
         UPDATE user_submissions
-        SET status = 'rejected', 
+        SET status = 'rejected',
         WHERE submission_id = :submission_id"""),
             {"submission_id": submission_id},
         )  # IS THIS LINE RIGHT?
