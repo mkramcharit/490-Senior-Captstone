@@ -66,8 +66,8 @@ class ReferenceIndex:
         ))
         similarity = max(groups[winner])
         agreement = len(groups[winner]) / len(matches)
-        confidence = max(0.0, similarity) * agreement
-        return {"landmark_id": winner, "confidence": confidence, "match_score": confidence,
+        match_score = max(0.0, similarity) * agreement
+        return {"landmark_id": winner, "match_score": match_score,
                 "confidence_probability": None, "confidence_calibrated": False,
                 "similarity": similarity, "agreement": agreement,
                 "top_matches": matches}

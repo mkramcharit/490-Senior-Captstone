@@ -70,9 +70,9 @@ def predict(image: UploadFile = File(...)):
         if isinstance(raw_id, bool) or not isinstance(raw_id, (int, str)):
             raise ValueError("Invalid landmark ID")
         landmark_id = int(raw_id)
-        confidence = float(prediction["confidence"])
-        if not math.isfinite(confidence) or not 0 <= confidence <= 1:
-            raise ValueError("Invalid confidence")
+        match_score = float(prediction["match_score"])
+        if not math.isfinite(match_score) or not 0 <= match_score <= 1:
+            raise ValueError("Invalid match score")
         probability = prediction.get("confidence_probability")
         if probability is not None:
             probability = float(probability)
@@ -89,11 +89,11 @@ def predict(image: UploadFile = File(...)):
         raise HTTPException(503, "Recognition could not complete. Check the model and reference index configuration.") from None
     if landmark is None:
         raise HTTPException(404, "The predicted landmark has no matching database record.")
-    return {"landmark_id": landmark_id, "confidence": confidence,
-            "match_score": confidence, "confidence_probability": probability,
+    return {"landmark_id": landmark_id,
+            "match_score": match_score, "confidence_probability": probability,
             "confidence_calibrated": probability is not None,
             "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation." if probability is not None else "No compatible calibrator installed.",
-            "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+            "match_score_description": "Similarity and reference agreement score; not a calibrated probability.",
             "landmark": landmark}
 
 if (ROOT / "frontend/dist").is_dir():

@@ -21,7 +21,7 @@ def test_upload_predicts_then_looks_up_same_id(client, photo, monkeypatch):
     def predict(data):
         assert data == photo
         seen.append("predict")
-        return {"landmark_id": "42", "confidence": .87}
+        return {"landmark_id": "42", "match_score": .87}
     def lookup(key):
         seen.append(key)
         return {"landmark_id": key, "name": "Test landmark", "lat": 0}
@@ -29,8 +29,9 @@ def test_upload_predicts_then_looks_up_same_id(client, photo, monkeypatch):
     monkeypatch.setattr(api, "lookup_landmark", lookup)
     response = client.post("/api/predict", files={"image": ("image.png", photo, "image/png")})
     assert response.status_code == 200
-    assert response.json()["confidence"] == .87
     assert response.json()["match_score"] == .87
+    assert "confidence" not in response.json()
+    assert "confidence_description" not in response.json()
     assert response.json()["confidence_probability"] is None
     assert response.json()["confidence_calibrated"] is False
     assert response.json()["landmark"]["name"] == "Test landmark"
@@ -40,7 +41,7 @@ def test_upload_predicts_then_looks_up_same_id(client, photo, monkeypatch):
 @pytest.mark.parametrize("probability,status", [(.72, 200), (float("nan"), 503), (1.2, 503)])
 def test_calibrated_probability(client, photo, monkeypatch, probability, status):
     monkeypatch.setattr(api, "get_pipeline", lambda: SimpleNamespace(predict=lambda _: {
-        "landmark_id": 42, "confidence": .2, "confidence_probability": probability}))
+        "landmark_id": 42, "match_score": .2, "confidence_probability": probability}))
     monkeypatch.setattr(api, "lookup_landmark", lambda key: {"landmark_id": key})
     response = client.post("/api/predict", files={"image": ("x.png", photo)})
     assert response.status_code == status
@@ -64,7 +65,7 @@ def test_missing_index(client, photo, monkeypatch, tmp_path):
 
 @pytest.mark.parametrize("failure,expected", [(None, 404), ("database", 503)])
 def test_lookup_errors(client, photo, monkeypatch, failure, expected):
-    monkeypatch.setattr(api, "get_pipeline", lambda: SimpleNamespace(predict=lambda _: {"landmark_id": 42, "confidence": .8}))
+    monkeypatch.setattr(api, "get_pipeline", lambda: SimpleNamespace(predict=lambda _: {"landmark_id": 42, "match_score": .8}))
     def lookup(_):
         if failure:
             raise psycopg.OperationalError("private connection details")

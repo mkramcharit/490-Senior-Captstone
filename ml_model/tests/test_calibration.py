@@ -68,5 +68,6 @@ def test_uncalibrated_prediction_has_no_probability():
     index.add([[1, 0]], [Reference(1, "a.jpg")])
     result = index.predict([1, 0])
     assert result["match_score"] == 1
+    assert "confidence" not in result
     assert result["confidence_probability"] is None
     assert not result["confidence_calibrated"]

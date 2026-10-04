@@ -776,7 +776,7 @@ function App() {
               {[
                 ['Landmark ID', recognition.landmark_id],
                 [recognition.confidence_probability == null ? 'Match score' : 'Estimated confidence',
-                  `${((recognition.confidence_probability ?? recognition.match_score ?? recognition.confidence) * 100).toFixed(1)}%`],
+                  `${((recognition.confidence_probability ?? recognition.match_score) * 100).toFixed(1)}%`],
                 ['Name', recognition.landmark.name],
                 ['Category', recognition.landmark.category_name],
                 ['City', recognition.landmark.city],
