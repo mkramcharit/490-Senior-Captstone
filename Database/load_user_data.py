@@ -77,9 +77,9 @@ def approve_submission(submission_id: int, info: SubmissionInfo):
     with engine.begin() as connection:
         result = connection.execute(
             text("""
-        UPDATE user_submissions
-        SET status = 'approved',
-        WHERE submission_id = :submission_id"""),
+            UPDATE user_submissions
+            SET status = 'approved',
+            WHERE submission_id = :submission_id"""),
             {
                 "submission_id": submission_id,
                 "category_name": info.category_name,
@@ -104,21 +104,15 @@ def reject_submission(submission_id: int):
     with engine.begin() as connection:
         result = connection.execute(
             text("""
-        UPDATE user_submissions
-        SET status = 'rejected',
-        WHERE submission_id = :submission_id"""),
+            UPDATE user_submissions
+            SET status = 'rejected',
+            WHERE submission_id = :submission_id"""),
         )
 
     if result.rowcount == 0:
-        raise HTTPException(
-            404, detail="Error: No matching item"
-        )  # TO-DO: FIGURE OUT WHAT EXCEPTION TO RAISE HERE
-
-    return {}  # TO-DO: FIGURE OUT WHAT RETURN SHOULD BE
-
-
-def move_rejected():
-    """Function to move rejected submissions to the training_data table"""
+        raise HTTPException(404, detail="Error: No matching item")
+    
+    return {"message": "Submission rejected"}
 
 
 def move_approved():
