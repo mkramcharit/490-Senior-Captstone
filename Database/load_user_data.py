@@ -16,7 +16,7 @@ load_dotenv()
 
 BUCKET_NAME = "image-bucket"
 BASE_URL = os.environ["ENDPOINT_URL_S3"] + "/" + BUCKET_NAME
-THRESHOLD = 30
+# THRESHOLD = 30 # We will use this later if we want to
 
 app = FastAPI(title="Ladmark Submission API")
 engine = create_engine(os.environ["DATABASE_URL"])  # Neon connection object
@@ -97,7 +97,6 @@ def approve_submission(submission_id: int, info: SubmissionInfo):
     return {"message": "Submission approved"}
 
 
-# TO-DO: consider changing this so that we keep the rejected submissions? so we don't get duplicates
 @app.post("/admin/reject/{submission_id}")
 def reject_submission(submission_id: int):
     """Post for when admin rejects a submission"""
@@ -111,11 +110,30 @@ def reject_submission(submission_id: int):
 
     if result.rowcount == 0:
         raise HTTPException(404, detail="Error: No matching item")
-    
+
     return {"message": "Submission rejected"}
 
 
-def move_approved():
+def fetch_landmark_id(connection, category_name: str):
+    """Fetch the landmark_id for a given category_name from the training_data table, or create one"""
+    result = connection.execute(
+        text("""
+        SELECT landmark_id FROM training_data
+        WHERE category_name = :category_name
+        """),
+        {"category_name": category_name},
+    ).scalar()
+    if result is not None:
+        return result
+    else:
+        new_id = connection.execute(
+            text("""
+            SELECT COALESCE(MAX(landmark_id), 0) + 1
+            FROM training_data""")).scalar()
+        return new_id
+
+
+def move_approved(connection, category_name, landmark_id):
     """Function to move approved submissions to the training_data table"""
 
 
@@ -125,5 +143,15 @@ def move_approved():
 @app.post("/clean")
 def clean_tables():
     """Post method for moving entries from user_submission table to training_data table"""
+    with engine.begin as connection:
+        approved = connection.execute(text("""
+            SELECT * FROM user_submissions
+            WHERE status = 'approved'
+            """)).fetchall()
+
+        for category_name in approved:
+            landmark_id = fetch_landmark_id(connection, category_name)
+
+        move_approved(connection, approved)
 
     return {}  # TO-DO: FIGURE OUT WHAT RETURN SHOULD BE
