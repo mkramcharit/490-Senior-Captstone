@@ -50,6 +50,11 @@ import {
 import './styles.css';
 
 
+// FastAPI runs separately from the Vite frontend during development.
+// All landmark recognition requests are sent to this address.
+const API_BASE_URL = 'http://127.0.0.1:8000';
+
+
 /*
 PRESET GLOBE DESTINATIONS
 
@@ -622,33 +627,110 @@ function App() {
   
   
   
-  // Prototype image upload flow.
+  // Image upload flow.
   //
-  // Currently:
+  // The old prototype paused for 1.8 seconds and always selected Paris.
+  // This version sends the selected image to the FastAPI /api/predict endpoint.
   //
-  // 1. Read selected image file,
-  // 2. Generate URL for local preview of image,
-  // 3. Show scanning screen,
-  // 4. Pause for 1.8 seconds,
-  // 5. Simulate AI recognizing Paris,
-  // 6. Show Trip Canvas
+  // Current flow:
   //
-  // Steps 4-5 in the app will use the backend /predict API.
+  // 1. Read selected image file.
+  // 2. Generate a local preview for the scanning screen.
+  // 3. Add the image to FormData.
+  // 4. Send the image to FastAPI.
+  // 5. FastAPI validates the image and returns a landmark id and confidence.
+  // 6. FastAPI retrieves the matching landmark information from Neon.
+  // 7. Convert the backend response into the same destination format already
+  //    used throughout the frontend.
+  // 8. Show the returned destination on the page.
   //
-  // Optional chaining on files?.[0] will help handle the case when the user opens
-  // the file picker then cancels. While this is a small check, it will prevent an
-  // error from occurring when encountering completely normal user input.
-  const onUpload = (e) => {
+  // For the 60% checkpoint, only the ML recognition result is simulated.
+  // The image upload, FastAPI request, Neon lookup and React state update are live.
+  const onUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setUploadPreview(URL.createObjectURL(file));
+
+    const previewUrl = URL.createObjectURL(file);
+
+    setUploadPreview(previewUrl);
     setAnalyzing(true);
-    setTimeout(() => {
+    setDetailOpen(false);
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/predict`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(
+          errorData?.detail || 'Trekmark could not identify this image.'
+        );
+      }
+
+      const data = await response.json();
+      const landmark = data.landmark;
+
+      // The current frontend already expects destination objects with fields such
+      // as name, country, lat, lng, hero and confidence. The backend response is
+      // converted here so the existing destination card and globe can reuse it.
+      const backendDestination = {
+        id: `landmark-${landmark.id}`,
+        landmarkId: landmark.id,
+        name: landmark.name,
+        country: [
+          landmark.city,
+          landmark.state,
+          landmark.country
+        ].filter(Boolean).join(', '),
+        lat: landmark.latitude,
+        lng: landmark.longitude,
+        confidence: Math.round(data.confidence * 100),
+        hero: landmark.image || previewUrl,
+        kicker: landmark.category_name
+          ? landmark.category_name
+              .replace('Category:', '')
+              .replaceAll('_', ' ')
+          : 'Recognized landmark',
+        summary:
+          `Trekmark identified ${landmark.name} using the recognition pipeline and retrieved its location information from the live landmark database.`,
+        experienceImage: landmark.image || previewUrl,
+        stayImage: landmark.image || previewUrl,
+        eatImage: landmark.image || previewUrl,
+        hotel: 'Travel data coming next',
+        stayPrice: '$—',
+        restaurant: 'Restaurant data coming next',
+        eatPrice: '$—',
+        attraction: 'Nearby landmarks coming next',
+        doPrice: '$—',
+        flight: 'Flight data coming next',
+        recognitionMode: data.recognition_mode,
+      };
+
+      setSelected(backendDestination);
+      setDetailOpen(false);
+
+      window.setTimeout(() => {
+        document.querySelector('#discover')?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
+      }, 350);
+    } catch (error) {
+      console.error('Trekmark upload failed:', error);
+      window.alert(
+        error.message || 'Trekmark could not process the uploaded image.'
+      );
+    } finally {
       setAnalyzing(false);
-      setSelected(destinations[2]);
-      setDetailOpen(true);
-      setTimeout(() => document.querySelector('#planner')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
-    }, 1800);
+
+      // Resetting the input lets the user select the exact same image again.
+      e.target.value = '';
+    }
   };
 
   return (
