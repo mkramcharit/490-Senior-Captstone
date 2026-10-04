@@ -16,6 +16,10 @@ load_dotenv()
 
 BUCKET_NAME = "image-bucket"
 BASE_URL = os.environ["ENDPOINT_URL_S3"] + "/" + BUCKET_NAME
+THRESHOLD = 30
+
+app = FastAPI(title="Ladmark Submission API")
+engine = create_engine(os.environ["DATABASE_URL"])  # Neon connection object
 
 client = boto3.client(
     "s3",
@@ -25,8 +29,14 @@ client = boto3.client(
     s3_secret_access_key=os.environ["S3_SECRET_ACCESS_KEY"],
 )
 
-app = FastAPI(title="Ladmark Submission API")
-engine = create_engine(os.environ["DATABASE_URL"])  # Neon connection object
+
+class SubmissionInfo(BaseModel):
+    category_name: str
+    lat: float
+    lon: float
+    city: str | None = None
+    state: str | None = None
+    country: str | None = None
 
 
 def upload_image(image: UploadFile):
@@ -43,8 +53,8 @@ def upload_image(image: UploadFile):
 def new_submission(
     image: UploadFile = File(...),
     name: str = Form(..., description="Name of the landmark"),
-    lat: float = Form(...),
-    lon: float = Form(...),
+    lat: float | None = Form(None),
+    lon: float | None = Form(None),
     city: str | None = Form(None),
     state: str | None = Form(None),
     country: str = Form(...),
@@ -61,28 +71,34 @@ def new_submission(
 
 # TO-DO: ADMIN NEEDS TO DETERMINE WHAT LANDMARK ID SHOULD BE FOR EACH LANDMARK. USERS WILL ONLY INPUT A LANDMARK NAME
 # THIS MEANS THAT WHEN A USER SUBMITS A LANDMARK, WE NEED TO MAP IT TO THE CORRECT LANDMARK ID IN OUR DATABASE.
-@app.post("/submissions/{submission_id}/approve")
-def approve_submission(submission_id: int):
+@app.post("/submissions/approve/{submission_id}")
+def approve_submission(submission_id: int, info: SubmissionInfo):
     """Post for admin approving a submission"""
-    with engine.begin() as connection:  # TO-DO: SHOULD THIS BE CONNECT?
+    with engine.begin() as connection:
         result = connection.execute(
             text("""
         UPDATE user_submissions
         SET status = 'approved',
         WHERE submission_id = :submission_id"""),
-            {"submission_id": submission_id},
-        )  # IS THIS LINE RIGHT?
+            {
+                "submission_id": submission_id,
+                "category_name": info.category_name,
+                "lat": info.lat,
+                "lon": info.lon,
+                "city": info.city,
+                "state": info.state,
+                "country": info.country,
+            },
+        )
 
     if result.rowcount == 0:
-        raise HTTPException(
-            404, detail="Error: No matching item"
-        )  # TO-DO: FIGURE OUT WHAT EXCEPTION TO RAISE HERE
+        raise HTTPException(404, detail="Error: No matching item")
 
-    return {}  # TO-DO: FIGURE OUT WHAT RETURN SHOULD BE
+    return {"message": "Submission approved"}
 
 
 # TO-DO: consider changing this so that we keep the rejected submissions? so we don't get duplicates
-@app.post("/admin/{submission_id}/reject")
+@app.post("/admin/reject/{submission_id}")
 def reject_submission(submission_id: int):
     """Post for when admin rejects a submission"""
     with engine.begin() as connection:
@@ -91,8 +107,7 @@ def reject_submission(submission_id: int):
         UPDATE user_submissions
         SET status = 'rejected',
         WHERE submission_id = :submission_id"""),
-            {"submission_id": submission_id},
-        )  # IS THIS LINE RIGHT?
+        )
 
     if result.rowcount == 0:
         raise HTTPException(
