@@ -40,7 +40,10 @@ Colors are stored as CSS custom properties (variables) so they can be used globa
 :root{font-family:Inter,-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;color:#f7f9fc;background:#05070b;font-synthesis:none;text-rendering:optimizeLegibility;--line:rgba(255,255,255,.11);--muted:#98a2b3;--ice:#a9dcff;--blue:#5ab8ff;--panel:#0c1119}
 /* width/height measurements become more reliable with border-box because
 the padding and border are part of the specified dimensions for the element. */
-*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-width:320px;background:radial-gradient(circle at 50% -15%,#172337 0,#090d14 28%,#05070b 55%);color:#fff;overflow-x:hidden}button,a{font:inherit}button{cursor:pointer}.shell{width:min(1240px,calc(100% - 48px));margin-inline:auto}/* NAVIGATION - BASE STYLES
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-width:320px;background:
+radial-gradient(circle at 50% -15%,#172337 0,rgba(9,13,20,.96) 29%,rgba(5,7,11,0) 58%),
+linear-gradient(180deg,#05070b 0%,#080d16 38%,#0c1726 68%,#142a45 100%);
+color:#fff;overflow-x:hidden}button,a{font:inherit}button{cursor:pointer}.shell{width:min(1240px,calc(100% - 48px));margin-inline:auto}/* NAVIGATION - BASE STYLES
 
 Later in the file this becomes a fixed glass navbar. */
 .nav{height:80px;display:flex;align-items:center;justify-content:space-between;position:relative;z-index:20}.brand{color:white;text-decoration:none;font-weight:650;display:flex;align-items:center;gap:10px;letter-spacing:-.02em}.brand-mark{width:31px;height:31px;border-radius:10px;background:linear-gradient(145deg,#fff,#83cfff);display:grid;place-items:center;color:#071018;box-shadow:0 0 40px rgba(85,184,255,.25)}.nav-links{display:flex;align-items:center;gap:28px}.nav-links a{color:#aeb7c5;text-decoration:none;font-size:13px}.upload-mini{border:1px solid var(--line);color:#eef5ff;background:rgba(255,255,255,.05);padding:10px 14px;border-radius:999px;display:flex;gap:8px;align-items:center;backdrop-filter:blur(20px)}
@@ -2192,4 +2195,1015 @@ Adds margin to the X close button at the top to prevent the fixed navbar from vi
 .planner-head .icon-btn{
   margin-top:22px;
   flex:0 0 auto;
+}
+
+
+/* RECOGNIZED LANDMARK RESULT
+
+Uploaded images receive a more detailed result card than preset globe
+destinations. This makes the recognition confidence, coordinates and live
+database connection easy to see without changing the rest of the page. */
+.recognized-copy{
+  max-width:760px;
+  padding-top:48px;
+  padding-bottom:48px;
+}
+
+.recognition-label{
+  width:max-content;
+  display:flex;
+  align-items:center;
+  gap:9px;
+  padding:8px 12px;
+  border:1px solid rgba(119,209,167,.26);
+  border-radius:999px;
+  background:rgba(13,31,27,.58);
+  color:#9ae0bc;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  backdrop-filter:blur(14px);
+}
+
+.recognition-dot{
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:#77d1a7;
+  box-shadow:0 0 14px rgba(119,209,167,.8);
+}
+
+.recognized-copy h2{
+  margin-top:16px;
+  margin-bottom:8px;
+}
+
+.recognition-location{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  color:#d7e1eb;
+  font-size:13px;
+}
+
+.recognition-facts{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin:24px 0 20px;
+}
+
+.recognition-facts>div{
+  width:max-content;
+  min-width:0;
+  min-height:0;
+  padding:10px 14px;
+  border:1px solid rgba(255,255,255,.09);
+  border-radius:16px;
+  background:rgba(5,9,14,.52);
+  backdrop-filter:blur(16px);
+}
+
+.recognition-facts span{
+  display:block;
+  margin-bottom:8px;
+  color:#8f9baa;
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+
+.recognition-facts strong{
+  color:#f5f8fb;
+  font-size:14px;
+  font-weight:650;
+}
+
+.recognition-facts>div:first-child strong{
+  color:#77d1a7;
+  font-size:20px;
+}
+
+@media(max-width:760px){
+  .recognized-copy{
+    padding:38px 28px;
+  }
+}
+
+
+/* RECOGNIZED DESTINATION TRIP CANVAS
+
+The upload result uses the live landmark information already returned from
+Neon. Travel services remain visually present but are clearly shown as the
+next integration phase instead of pretending that live travel data exists. */
+.planner-head--recognized{
+  align-items:flex-start;
+}
+
+.planner-head--recognized p{
+  max-width:690px;
+}
+
+.recognized-trip-hero{
+  min-height:330px;
+  margin-top:28px;
+  border:1px solid rgba(255,255,255,.09);
+  border-radius:28px;
+  background-size:cover;
+  background-position:center;
+  overflow:hidden;
+  display:flex;
+  align-items:flex-end;
+  box-shadow:0 30px 90px rgba(0,0,0,.24);
+}
+
+.recognized-trip-hero__copy{
+  width:min(620px,100%);
+  padding:38px;
+}
+
+.recognized-trip-hero__copy>span{
+  color:#8fd9b7;
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+}
+
+.recognized-trip-hero__copy h3{
+  margin:8px 0 8px;
+  color:#fff;
+  font-size:clamp(34px,5vw,58px);
+  line-height:.98;
+}
+
+.recognized-trip-hero__copy p{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  margin:0;
+  color:#d7e0e8;
+  font-size:13px;
+}
+
+.recognized-trip-confidence{
+  width:max-content;
+  margin-top:18px;
+  padding:8px 11px;
+  border:1px solid rgba(119,209,167,.26);
+  border-radius:999px;
+  background:rgba(5,15,13,.62);
+  color:#88ddb5;
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.04em;
+  backdrop-filter:blur(14px);
+}
+
+.destination-profile{
+  margin-top:24px;
+  padding:24px;
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:24px;
+  background:rgba(5,9,14,.48);
+  backdrop-filter:blur(18px);
+}
+
+.destination-profile__head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:24px;
+  margin-bottom:18px;
+}
+
+.destination-profile__head>div>span,
+.planning-next-head>div>span{
+  color:#8e9aa8;
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.11em;
+  text-transform:uppercase;
+}
+
+.destination-profile__head h3,
+.planning-next-head h3{
+  margin:5px 0 0;
+  color:#f5f8fb;
+  font-size:22px;
+}
+
+.profile-source{
+  padding:7px 10px;
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:999px;
+  color:#9ca7b4;
+  font-size:10px;
+  font-weight:700;
+  white-space:nowrap;
+}
+
+.destination-profile__grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+}
+
+.profile-field{
+  min-width:0;
+  padding:14px;
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:15px;
+  background:rgba(255,255,255,.025);
+}
+
+.profile-field span{
+  display:block;
+  margin-bottom:6px;
+  color:#7f8b99;
+  font-size:9px;
+  font-weight:800;
+  letter-spacing:.09em;
+  text-transform:uppercase;
+}
+
+.profile-field strong{
+  display:block;
+  color:#eef3f7;
+  font-size:13px;
+  line-height:1.35;
+  overflow-wrap:anywhere;
+}
+
+.planning-next-head{
+  display:flex;
+  align-items:end;
+  justify-content:space-between;
+  gap:28px;
+  margin:38px 0 16px;
+}
+
+.planning-next-head p{
+  max-width:470px;
+  margin:0;
+  color:#8995a2;
+  font-size:12px;
+  line-height:1.6;
+}
+
+.trip-grid--future{
+  margin-top:0;
+}
+
+.trip-card--future{
+  min-height:180px;
+}
+
+.trip-card--future strong{
+  line-height:1.25;
+}
+
+.trip-card--future small{
+  max-width:240px;
+  line-height:1.5;
+}
+
+@media(max-width:900px){
+  .destination-profile__grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+
+  .planning-next-head{
+    align-items:flex-start;
+    flex-direction:column;
+    gap:10px;
+  }
+}
+
+@media(max-width:620px){
+  .recognized-trip-hero{
+    min-height:300px;
+  }
+
+  .recognized-trip-hero__copy{
+    padding:26px;
+  }
+
+  .destination-profile{
+    padding:18px;
+  }
+
+  .destination-profile__head{
+    flex-direction:column;
+    gap:10px;
+  }
+
+  .destination-profile__grid{
+    grid-template-columns:1fr;
+  }
+}
+
+
+/* USER-FACING DESTINATION DETAILS */
+.destination-profile__grid--simple{
+  grid-template-columns:repeat(4,minmax(0,1fr));
+}
+
+/* FUTURE TRAVEL CARDS
+
+These cards stay useful before live travel APIs are connected by using the
+recognized landmark image and location as context. */
+.trip-grid--future .trip-card{
+  padding:0;
+  overflow:hidden;
+}
+
+.future-card-image{
+  width:100%;
+  height:118px;
+  background-size:cover;
+  background-position:center;
+}
+
+.future-card-image--stay{
+  background-position:center 42%;
+}
+
+.future-card-image--eat{
+  background-position:center 58%;
+}
+
+.future-card-image--nearby{
+  background-position:center 70%;
+}
+
+.future-card-copy{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  min-height:170px;
+  padding:18px;
+}
+
+.future-card-copy svg{
+  margin-bottom:14px;
+}
+
+.future-card-copy span{
+  margin-bottom:7px;
+}
+
+.future-card-copy strong{
+  margin-bottom:8px;
+}
+
+/* COMMUNITY LANDMARK SUBMISSION
+
+The form writes user suggestions into the user_submissions table.
+Only the landmark name, image URL and country are required. */
+.submission-section{
+  display:grid;
+  grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);
+  gap:34px;
+  margin-top:88px;
+  padding:34px;
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:30px;
+  background:rgba(5,9,14,.54);
+  box-shadow:0 35px 110px rgba(0,0,0,.22);
+  backdrop-filter:blur(22px);
+}
+
+.submission-copy{
+  display:flex;
+  flex-direction:column;
+}
+
+.submission-copy h2{
+  max-width:520px;
+  margin:12px 0 12px;
+  color:#fff;
+  font-size:clamp(34px,4vw,54px);
+  line-height:1;
+}
+
+.submission-copy>p{
+  max-width:520px;
+  margin:0;
+  color:#9aa6b4;
+  line-height:1.65;
+}
+
+.submission-preview{
+  min-height:245px;
+  margin-top:26px;
+  padding:18px;
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:22px;
+  background-size:cover;
+  background-position:center;
+  display:flex;
+  align-items:flex-end;
+  color:#fff;
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+
+.submission-preview--empty{
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  gap:10px;
+  background:rgba(255,255,255,.025);
+  color:#7f8b99;
+}
+
+.submission-form{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:16px;
+  padding:24px;
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:24px;
+  background:rgba(255,255,255,.025);
+}
+
+.submission-field{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+
+.submission-field--wide{
+  grid-column:1 / -1;
+}
+
+.submission-field label{
+  color:#cdd6df;
+  font-size:11px;
+  font-weight:750;
+}
+
+.submission-field label span{
+  color:#697582;
+  font-weight:600;
+}
+
+.submission-field input{
+  width:100%;
+  height:46px;
+  padding:0 13px;
+  border:1px solid rgba(255,255,255,.09);
+  border-radius:13px;
+  outline:none;
+  background:rgba(2,5,9,.52);
+  color:#f5f8fb;
+  font:inherit;
+  transition:border-color .2s ease, background .2s ease;
+}
+
+.submission-field input::placeholder{
+  color:#596572;
+}
+
+.submission-field input:focus{
+  border-color:rgba(119,209,167,.42);
+  background:rgba(4,10,14,.74);
+}
+
+.submission-form__footer{
+  grid-column:1 / -1;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px;
+  margin-top:4px;
+}
+
+.submission-status{
+  color:#90a0af;
+  font-size:12px;
+  line-height:1.4;
+}
+
+.submission-form button:disabled{
+  opacity:.58;
+  cursor:wait;
+}
+
+@media(max-width:900px){
+  .destination-profile__grid--simple{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+
+  .submission-section{
+    grid-template-columns:1fr;
+  }
+}
+
+@media(max-width:620px){
+  .destination-profile__grid--simple{
+    grid-template-columns:1fr;
+  }
+
+  .submission-section{
+    padding:20px;
+  }
+
+  .submission-form{
+    grid-template-columns:1fr;
+    padding:18px;
+  }
+
+  .submission-field--wide,
+  .submission-form__footer{
+    grid-column:1;
+  }
+
+  .submission-form__footer{
+    align-items:stretch;
+    flex-direction:column;
+  }
+}
+
+
+/* LANDMARK SUBMISSION RESULT
+
+After the backend confirms whether the submission was accepted, the whole
+tile changes into a short result state instead of leaving a small status
+message beneath the form. */
+.submission-section--success,
+.submission-section--error{
+  display:block;
+  min-height:430px;
+  position:relative;
+  overflow:hidden;
+}
+
+.submission-section--success{
+  border-color:rgba(119,209,167,.2);
+  background:
+    radial-gradient(circle at 50% 35%, rgba(119,209,167,.10), transparent 34%),
+    rgba(5,9,14,.58);
+}
+
+.submission-section--error{
+  border-color:rgba(225,122,122,.18);
+  background:
+    radial-gradient(circle at 50% 35%, rgba(225,122,122,.08), transparent 34%),
+    rgba(5,9,14,.58);
+}
+
+.submission-result{
+  min-height:360px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding:36px 24px;
+}
+
+.submission-result__icon{
+  width:76px;
+  height:76px;
+  display:grid;
+  place-items:center;
+  margin-bottom:24px;
+  border-radius:24px;
+  backdrop-filter:blur(18px);
+}
+
+.submission-result__icon--success{
+  border:1px solid rgba(119,209,167,.28);
+  background:rgba(119,209,167,.10);
+  color:#8fe0ba;
+  box-shadow:0 0 45px rgba(119,209,167,.10);
+}
+
+.submission-result__icon--error{
+  border:1px solid rgba(225,122,122,.25);
+  background:rgba(225,122,122,.09);
+  color:#e69b9b;
+  box-shadow:0 0 45px rgba(225,122,122,.08);
+}
+
+.submission-result__copy{
+  max-width:680px;
+}
+
+.submission-result__copy h2{
+  margin:12px 0 12px;
+  color:#fff;
+  font-size:clamp(34px,4vw,52px);
+  line-height:1.02;
+}
+
+.submission-result__copy p{
+  max-width:620px;
+  margin:0 auto;
+  color:#9ba7b5;
+  font-size:14px;
+  line-height:1.7;
+}
+
+.submission-result__button{
+  margin-top:28px;
+}
+
+@media(max-width:620px){
+  .submission-section--success,
+  .submission-section--error{
+    min-height:360px;
+  }
+
+  .submission-result{
+    min-height:310px;
+    padding:28px 14px;
+  }
+
+  .submission-result__icon{
+    width:64px;
+    height:64px;
+    border-radius:20px;
+  }
+}
+
+
+/* SAME-LANDMARK PHOTO GALLERY
+
+These images are other training_data rows that share the same landmark ID
+as the recognized destination. */
+.landmark-gallery-section,
+.nearby-landmarks-section{
+  margin-top:34px;
+}
+
+.trip-section-heading{
+  display:flex;
+  align-items:end;
+  justify-content:space-between;
+  gap:28px;
+  margin-bottom:16px;
+}
+
+.trip-section-heading>div>span{
+  color:#8e9aa8;
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.11em;
+  text-transform:uppercase;
+}
+
+.trip-section-heading h3{
+  margin:5px 0 0;
+  color:#f5f8fb;
+  font-size:22px;
+}
+
+.trip-section-heading p{
+  max-width:450px;
+  margin:0;
+  color:#8995a2;
+  font-size:12px;
+  line-height:1.6;
+}
+
+.landmark-gallery-grid{
+  display:grid;
+  grid-template-columns:1.2fr 1fr 1fr;
+  gap:12px;
+}
+
+.landmark-gallery-image{
+  min-height:230px;
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:22px;
+  background-size:cover;
+  background-position:center;
+  overflow:hidden;
+}
+
+.landmark-gallery-image:first-child{
+  min-height:285px;
+}
+
+/* LIVE NEARBY LANDMARKS
+
+The backend returns the three nearest distinct landmarks within Trekmark's
+regional distance cap. */
+.nearby-landmarks-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px;
+}
+
+.nearby-landmark-card{
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:22px;
+  background:rgba(5,9,14,.48);
+}
+
+.nearby-landmark-card__image{
+  min-height:180px;
+  padding:14px;
+  display:flex;
+  align-items:flex-start;
+  justify-content:flex-end;
+  background-size:cover;
+  background-position:center;
+}
+
+.nearby-landmark-card__image span{
+  padding:7px 9px;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:999px;
+  background:rgba(5,9,14,.66);
+  color:#eef4f8;
+  font-size:10px;
+  font-weight:800;
+  backdrop-filter:blur(14px);
+}
+
+.nearby-landmark-card__copy{
+  padding:16px;
+}
+
+.nearby-landmark-card__copy strong{
+  display:block;
+  color:#f4f7fa;
+  font-size:15px;
+  line-height:1.3;
+}
+
+.nearby-landmark-card__copy span{
+  display:block;
+  margin-top:6px;
+  color:#8e99a6;
+  font-size:11px;
+  line-height:1.45;
+}
+
+.trip-grid--future-three{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+}
+
+@media(max-width:900px){
+  .trip-section-heading{
+    align-items:flex-start;
+    flex-direction:column;
+    gap:8px;
+  }
+
+  .landmark-gallery-grid{
+    grid-template-columns:1fr 1fr;
+  }
+
+  .landmark-gallery-image:first-child{
+    grid-column:1 / -1;
+  }
+
+  .nearby-landmarks-grid,
+  .trip-grid--future-three{
+    grid-template-columns:1fr;
+  }
+}
+
+@media(max-width:620px){
+  .landmark-gallery-grid{
+    grid-template-columns:1fr;
+  }
+
+  .landmark-gallery-image:first-child{
+    grid-column:auto;
+  }
+
+  .landmark-gallery-image,
+  .landmark-gallery-image:first-child{
+    min-height:220px;
+  }
+}
+
+
+/* TRIP CANVAS SCROLL CUE
+
+The Trip Canvas contains more content below the first viewport, so a compact
+cue is placed inside the hero image. It stays visually quiet but gives the
+user a clear path into the rest of the trip content. */
+.recognized-trip-hero{
+  position:relative;
+}
+
+.trip-scroll-cue{
+  position:absolute;
+  left:50%;
+  bottom:18px;
+  transform:translateX(-50%);
+  min-height:40px;
+  padding:9px 13px 9px 15px;
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:999px;
+  background:rgba(5,10,17,.58);
+  color:#f4f7fa;
+  display:flex;
+  align-items:center;
+  gap:7px;
+  font:inherit;
+  font-size:11px;
+  font-weight:750;
+  cursor:pointer;
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  box-shadow:0 10px 30px rgba(0,0,0,.18);
+  transition:background .2s ease,border-color .2s ease,transform .2s ease;
+}
+
+.trip-scroll-cue:hover{
+  background:rgba(9,18,29,.76);
+  border-color:rgba(255,255,255,.24);
+  transform:translateX(-50%) translateY(-2px);
+}
+
+.trip-scroll-cue svg{
+  animation:tripCueBounce 1.6s ease-in-out infinite;
+}
+
+@keyframes tripCueBounce{
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(3px)}
+}
+
+/* STRONGER PAGE COLOR TRANSITION
+
+These rules intentionally sit at the end of the stylesheet so they override
+earlier background experiments. The page starts in Trekmark's original dark
+navy and gradually moves into a much brighter travel blue toward the bottom. */
+body{
+  background:#07101c;
+}
+
+main{
+  background:
+    radial-gradient(circle at 18% 7%,rgba(44,95,151,.34),transparent 28%),
+    radial-gradient(circle at 82% 24%,rgba(60,96,160,.22),transparent 32%),
+    linear-gradient(
+      180deg,
+      #07101c 0%,
+      #0a1525 18%,
+      #10243a 38%,
+      #183653 58%,
+      #214b70 78%,
+      #2d648e 100%
+    );
+}
+
+.travel-bg__sunset{
+  background:
+    radial-gradient(ellipse at 50% 42%,rgba(72,137,196,.18),transparent 30%),
+    radial-gradient(ellipse at 73% 63%,rgba(83,157,207,.16),transparent 34%),
+    radial-gradient(ellipse at 25% 78%,rgba(66,129,187,.14),transparent 38%);
+}
+
+@media(max-width:620px){
+  .trip-scroll-cue{
+    bottom:14px;
+  }
+}
+
+@media(prefers-reduced-motion:reduce){
+  .trip-scroll-cue svg{
+    animation:none;
+  }
+}
+
+
+/* DESTINATION PROFILE NEXT STEP
+
+The next-step control sits beside the destination profile where the user
+naturally finishes reading the first block of trip information. */
+.trip-scroll-cue{
+  display:none;
+}
+
+.destination-profile__actions{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.profile-explore-button{
+  min-height:42px;
+  padding:10px 15px;
+  border:1px solid rgba(255,167,76,.55);
+  border-radius:999px;
+  background:linear-gradient(135deg,#ff9d43,#f47c32);
+  color:#111823;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font:inherit;
+  font-size:11px;
+  font-weight:850;
+  cursor:pointer;
+  box-shadow:0 10px 28px rgba(244,124,50,.22);
+  transition:transform .2s ease,box-shadow .2s ease,filter .2s ease;
+}
+
+.profile-explore-button:hover{
+  transform:translateY(-2px);
+  box-shadow:0 14px 34px rgba(244,124,50,.3);
+  filter:brightness(1.05);
+}
+
+.profile-explore-button svg{
+  animation:profileExploreBounce 1.5s ease-in-out infinite;
+}
+
+@keyframes profileExploreBounce{
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(3px)}
+}
+
+/* BALANCED PAGE COLOR TRANSITION
+
+The page uses two related blue shades with the transition centered around
+the middle of the experience. Orange is reserved for small accents so the
+page keeps its travel-blue identity without becoming visually overpowering. */
+body{
+  background:#07101c;
+}
+
+main{
+  background:
+    radial-gradient(circle at 12% 14%,rgba(39,82,128,.16),transparent 26%),
+    radial-gradient(circle at 88% 72%,rgba(255,145,61,.06),transparent 24%),
+    linear-gradient(
+      180deg,
+      #08111f 0%,
+      #0b1728 34%,
+      #10233a 48%,
+      #17314d 58%,
+      #1b3a59 100%
+    );
+}
+
+.travel-bg__sunset{
+  background:
+    radial-gradient(ellipse at 74% 66%,rgba(255,145,61,.08),transparent 28%),
+    radial-gradient(ellipse at 34% 78%,rgba(52,111,166,.11),transparent 34%);
+}
+
+.eyebrow{
+  color:#ff9d4d;
+}
+
+.recognition-label,
+.recognized-trip-hero__copy>span,
+.destination-profile__head>div>span,
+.planning-next-head>div>span,
+.trip-section-heading>div>span{
+  color:#f5a45d;
+}
+
+.recognition-dot{
+  background:#ff9d4d;
+  box-shadow:0 0 14px rgba(255,157,77,.55);
+}
+
+@media(max-width:900px){
+  .destination-profile__head{
+    align-items:flex-start;
+  }
+
+  .destination-profile__actions{
+    align-items:flex-end;
+    flex-direction:column;
+  }
+}
+
+@media(max-width:620px){
+  .destination-profile__head{
+    flex-direction:column;
+  }
+
+  .destination-profile__actions{
+    width:100%;
+    align-items:flex-start;
+  }
+
+  .profile-explore-button{
+    width:100%;
+    justify-content:center;
+  }
+}
+
+@media(prefers-reduced-motion:reduce){
+  .profile-explore-button svg{
+    animation:none;
+  }
 }

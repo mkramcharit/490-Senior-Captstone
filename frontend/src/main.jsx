@@ -4,29 +4,28 @@
 /*
 TREKMARK FRONT END - main.jsx
 
-This file holds the bulk of all React functionality within the current
+This file contains the majority of React functionality for the present
 Trekmark prototype.
 
-The purpose of this prototype is:
+The objective of the prototype is:
 
-1. Allow the user to find a destination by either clicking on a location
-   on the globe or by uploading an image.
-2. Show a preview card of the chosen destination.
-3. Enable the user to enter a more detailed “Trip Canvas” with sample
-   data for flight, hotel, food, attractions, pricing, and itinerary.
-4. Keep the interface very visual to provide a travel product experience
-   instead of a technical capstone/research project.
-
+1. Enable a user to find a destination either by selecting a destination
+   from a globe, or by uploading an image.
+2. Show a preview card for a destination.
+3. Allow user to fill out a more specific "Trip Canvas" with an example of
+   flight, hotel, food, activities, pricing and itinerary for a destination.
+4. Keep the design highly visual and provide a travel product experience,
+   rather than a technical capstone/research project.
 */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
-// React 18+ uses createRoot to mount the app to index.html
+// React 18+ uses createRoot to attach the app to index.html
 import { createRoot } from 'react-dom/client';
 
 
-// Framer Motion is used for smooth transitions when sliding and fading in/out.
-// AnimatePresence is useful for removing elements as CSS has limited support
-// for animating elements after removal by React.
+// Framer Motion is used for smooth transitions on fade in/out and sliding.
+// AnimatePresence is helpful when removing elements because CSS has very little
+// support for animating elements after they are removed by React.
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ArrowRight,
@@ -45,41 +44,42 @@ import {
 } from 'lucide-react';
 
 
-// All styling, responsiveness, globe styling, background animation,
-// fixed navigation and Trip Canvas layout is defined here.
+// Styling, responsive design, globe styling, background animation, fixed
+// navigation bar and Trip Canvas layout are all defined here.
 import './styles.css';
 
 
-// FastAPI runs separately from the Vite frontend during development.
-// All landmark recognition requests are sent to this address.
+// In dev the FastAPI server is running independently of the Vite frontend.
+// All landmark recognition requests are sent to this server.
 const API_BASE_URL = 'http://127.0.0.1:8000';
 
 
 /*
 PRESET GLOBE DESTINATIONS
 
-These are the five destinations currently on the globe.
+There are currently 5 destinations on the globe.
 
-Each object has the following properties:
+Each of these has the following properties:
 
 - id: React internal id
-- name/country: rendered in UI
-- lat/lng: actual lat/lng for map pin
+- name/country: displayed in UI
+- lat/lng: the real lat/lng to use for a map pin
 - kicker: short promotional copy
-- confidence: fake confidence level for recognition (only for prototype)
-- hero / experienceImage / stayImage / eatImage: individual images so the
-  Trip Canvas doesn't reuse the same image
-- hotel / restaurant / attraction: sample travel options
-- stayPrice / eatPrice / doPrice / flight: sample prices
+- confidence: fake confidence for landmark recognition (only in prototype)
+- hero / experienceImage / stayImage / eatImage: individual images for use in
+  the Trip Canvas (so that the Trip Canvas does not reuse an image)
+- hotel / restaurant / attraction: example of these three types of experiences
+- stayPrice / eatPrice / doPrice / flight: examples of the price for each type
+  of experience
 
-Once the backend exists, a large amount of this data will come from the API
-instead of being hardcoded here.
+Once the backend exists, the majority of this data will be provided by the API
+rather than hardcoded in this file.
 
-Having all the preset destinations in one array makes the rest of
-the page a lot easier to work with. Rather than hard coding Orlando, Tokyo, Paris,
-etc. in five different places, React can loop over the same data and use it in multiple
-places. This is much cleaner and should make integration to the backend even less
-painful as we can replace mock data with API data.
+Having this list of pre-defined destinations in one place makes the rest of the
+frontend much easier to use. Rather than hardcoding Orlando, Tokyo, Paris, etc.,
+in 5 different places, React can loop over this data and use it in multiple
+places. This is cleaner and should also make integration with the backend easier.
+We can replace the mock data with API data.
 */
 const destinations = [
   {
@@ -153,20 +153,20 @@ const destinations = [
 /*
 ROTATING DESTINATION GALLERY
 
-The large full width image carousel found lower on the page.
+This is the large horizontal image gallery found lower in the application.
 
-There are five globe presets but some gallery items have their own custom
-"trip" object. This enables a user to click "Plan this trip" on a gallery item and use
-the same Trip Canvas as used in the globe.
+There are 5 pre-defined destinations on the globe but some of the gallery images
+have a "trip" object associated with them. This allows the user to select
+"Plan this trip" on one of these images and use the same Trip Canvas that is
+used for the globe.
 
-For Tokyo and the Amazon we reuse an existing destination object via
+For Tokyo and the Amazon, we reuse an existing destination object using
 destinations.find(...). No duplicate data is created.
 
-The gallery is structured similarly to the globe using data.
-Some items have their own trip object, while others reuse an existing
-destination using .find(). Again, reusing an object here avoids copying
-duplicate data across the entire file. Things would quickly become messy
-if we copy/paste data everywhere.
+The gallery is set up similarly to the globe using data. Some items have their
+own trip object while others reuse an existing destination using .find().
+Again, reusing an object here prevents copying data across the page. If we were
+to copy/paste data across the page it would quickly get messy.
 */
 const gallery = [
   {
@@ -236,16 +236,16 @@ const gallery = [
 /*
 BACKGROUND PARTICLES
 
-These are the small glowing particles in the background.
+These are the small animated particles in the background.
 
-The position, size, delay and duration of each particle is randomized once.
-useMemo is used here to avoid the particles jumping to new random
-positions every time the page is re-rendered by React.
+Each of these has a random position, size, delay and duration. One randomization
+happens at initialization. useMemo is used here so that the particles do not
+jump to new random positions when the page re-renders because of React.
 
-This is mostly visual polish, but it does go a long way towards making the
-page feel dynamic rather than entirely static in the mockup. We keep the
-effect fairly lightweight since there's no benefit in cooking the GPU
-for small background dots.
+This is mostly visual and does go a long way towards providing a dynamic page
+instead of a completely static mock-up. The animation is kept lightweight since
+there is no real benefit to cooking the GPU for a small number of animated
+background particles.
 */
 function ParticleField() {
   const particles = useMemo(() => Array.from({ length: 34 }, (_, i) => ({
@@ -259,74 +259,73 @@ function ParticleField() {
 /*
 LIGHTWEIGHT "GLOBE" COMPONENT
 
-The current implementation of the globe is performance optimized.
+The current implementation of the globe is optimized for performance.
 
-Rather than warping a high-resolution texture repeatedly in JavaScript,
-we instead shift copies of a real world map texture within a circular
-container horizontally. The location dots are drawn INSIDE the same
-map texture. Since both the map and the location dots are moving together,
-the dots stay in their correct geographic positions.
+Rather than warping a high resolution map texture in JavaScript multiple times,
+we instead are shifting copies of a real world map texture inside of a circular
+view. The location pins are drawn inside of the same map texture. Because both
+the map and location pins are moving together, the pins will always be in the
+correct geographic location.
 
-This gives us:
+This allows for:
 
-- A rotating earth-like globe
-- Accurate placement of continents
-- Markers that adhere to the map
-- Much lower latency compared to our canvas-warp implementations
+- A rotating globe that looks like earth
+- Correctly positioned continents
+- Pins that stay in the correct location on the map
+- Much lower latency than our previous canvas warping implementations.
 
 Props:
 
-- selected: the currently selected location
-- onSelect: called when a marker is clicked
+- selected: currently selected location
+- onSelect: called on click of a location pin
 
-The globe appears a bit complex, but the actual concept is actually quite
-simple. A map with its markers all flow within a circular view. This eliminates
-the issue of marker drift and provides the appearance of a rotating Earth
-without the overhead of a much heavier full 3D globe library.
+The globe is somewhat complex, but the concept behind it is relatively simple.
+A map and all of the location pins can flow inside a circular view. This prevents
+any pin from drifting and allows for a rotating Earth while not requiring a much
+heavier 3D globe library.
 */
 function CanvasGlobe({ selected, onSelect }) {
   
-  // Reference to the visible circular viewing "window" that crops the map.
+  // Reference to the circular view that crops the map.
   const viewportRef = useRef(null);
 
   
   
-  // We create several copies of the world map in order to be able to loop the map
-  // infinitely, without leaving whitespace on the left or right sides.
+  // Several copies of the entire world map are created so that the map can loop
+  // infinitely without whitespace at either end.
   const worldRefs = useRef([]);
 
   
   
-  // Current longitude/rotation value. Instead of state, we use refs because this
-  // gets updated every animation frame and SHOULD NOT cause React re-renders.
+  // Current longitude/rotation value. Instead of using state, we use refs because
+  // this gets updated every animation frame and should not trigger a React re-render.
   const rotationRef = useRef(-28);
 
   
   
-  // The longitude we smoothly rotate toward if a destination is clicked.
+  // The longitude we smoothy rotate to after a destination is selected.
   const targetRotationRef = useRef(null);
 
   
   
-  // Pauses automatic rotation for a short time when a destination is focused. This
-  // gives the user time to look at their focused destination.
+  // Slows automatic rotation for a short time after a destination is selected.
+  // This gives the user time to check out the selected destination.
   const pauseUntilRef = useRef(0);
 
   
-  // Stores requestAnimationFrame to be cancelled later during cleanup.
+  // Stores requestAnimationFrame to be cancelled later on in the cleanup.
   const rafRef = useRef(null);
 
   
   
-  // Used for calculating the time that has elapsed since the last frame. This
-  // enables smooth animation across 60 Hz, 120 Hz and 144 Hz displays.
+  // Used to calculate how long has passed since the last animation frame.
+  // This allows the animation to be smooth on 60 Hz, 120 Hz and 144 Hz displays.
   const lastTimeRef = useRef(performance.now());
 
   
   
-  // To select a new location, have the globe animate to rotate to the
-  // longitude of the new location, then stop the automatic rotation for
-  // 2.6 seconds.
+  // To select a destination cause the globe to rotate to the longitude of the new
+  // destination and pause the automatic rotation for 2.6 seconds.
   useEffect(() => {
     if (!selected) return;
     targetRotationRef.current = selected.lng;
@@ -336,9 +335,8 @@ function CanvasGlobe({ selected, onSelect }) {
   
   
   
-  // Animation loop for the globe.
-  // Runs once when the globe is mounted and removes itself when the
-  // component is removed.
+  // The animation loop used for the globe.
+  // Runs once on initialization of the globe and is removed when the component is removed.
   useEffect(() => {
     const viewport = viewportRef.current;
     if (!viewport) return;
@@ -360,14 +358,14 @@ function CanvasGlobe({ selected, onSelect }) {
         rotationRef.current = (rotationRef.current + dt * .0048) % 360;
       }
 
-      // 560 is a fallback value if the browser has not completed measuring
-      // the globe yet. This prevents the first animation frame from performing
-      // strange calculations while the layout is still settling.
+      // 560 is a fallback in case the browser has not completed measuring the globe yet.
+      // This prevents the first animation frame from doing some odd calculations while
+      // the layout is still settling.
       const viewportWidth = viewport.clientWidth || 560;
       const worldWidth = viewportWidth * 2;
 
       
-      // Center the currently/selected longitude in the circular view.
+      // Center the current/selected longitude in the circular view.
       const normalizedRotation =
         ((rotationRef.current + 180) % 360 + 360) % 360;
 
@@ -380,14 +378,13 @@ function CanvasGlobe({ selected, onSelect }) {
       
       
       
-      // The markers are INSIDE each world.
-      // The world and markers are translated together as one object,
-      // meaning the labels will always be in the correct geographic
-      // location.
+      // The pins are inside the world maps.
+      // The world map and pins are translated together so that the labels remain in
+      // their correct geolocation.
       //
-      // Each copy of a world receives the same translation value. This is what
-      // allows the repeating texture to appear as a single globe rather than
-      // three separate worlds moving independently.
+      // Each copy of the world map has the same value for translation. This is what
+      // makes the looping texture appear as one globe instead of three separate
+      // copies of the world moving independently.
       worldRefs.current.forEach((world) => {
         if (world) {
           world.style.transform = `translate3d(${translateX}px,0,0)`;
@@ -406,8 +403,8 @@ function CanvasGlobe({ selected, onSelect }) {
 
   
   
-  // A function that creates one instance of the world texture and all
-  // destination markers. Three instances are created for horizontal looping.
+  // A function that creates a copy of a world map along with all of the destination
+  // pins. Three copies are created to allow for infinite looping.
   const renderWorldCopy = (copyKey, leftPercent, refIndex) => (
     <div
       key={copyKey}
@@ -426,14 +423,11 @@ function CanvasGlobe({ selected, onSelect }) {
         
         
         
-        // Takes latitude and longitude and converts them to percentages
-        // on an equirectangular world map.
+        // Converts a pair of lat/lng to percentage values on an equirectangular world map.
         //
-        // Longitude:
-        // -180 degrees = far left, +180 degrees = far right.
+        // Longitude: -180 degrees is far left and +180 degrees is far right.
         //
-        // Latitude:
-        // +90 degrees = top (North Pole), -90 degrees = bottom.
+        // Latitude: +90 degrees is on top (North Pole) and -90 degrees is on bottom.
         const x = ((d.lng + 180) / 360) * 100;
         const y = ((90 - d.lat) / 180) * 100;
 
@@ -475,48 +469,52 @@ function CanvasGlobe({ selected, onSelect }) {
 /*
 MAIN TREKMARK APPLICATION
 
-App() creates the main user visible elements and assembles all
-sections of the page. Most of the app is currently a single page
-application. As the user moves through the app, links cause changes
-in React state instead of transitioning to entirely new HTML pages.
+App() creates the visible page components and assembles the components of the
+page. The majority of the page is currently a single page app. As a user
+progresses through the app, clicking on links will cause changes to React state
+rather than switching to a different HTML page.
 
-App() is essentially in charge of managing the page state. It tracks data such
-as which destination is selected, whether the Trip Canvas is visible, which
-gallery slide is currently displayed and whether the fake AI image scanning
-screen is currently visible.
+App() is essentially in charge of handling page state. It keeps track of the
+current selected destination, visibility of the detailed Trekmark Trip Canvas,
+the currently uploaded image (temporary URL), visibility of the fake AI image
+processing page and the currently displayed image in the rotating gallery.
 */
 function App() {
   
   
-  // Hidden input used for file input. Utilised by various buttons in the app to
-  // let the user select a file using the user's default file picker.
+  // Hidden input for image uploads. Used by several buttons in the app to allow a
+  // user to upload a file using the user's default file opener.
   const fileRef = useRef();
 
   
-  // Currently selected destination. If null then no destination has been selected.
+  // Currently selected destination. If this is null then no destination is selected.
   const [selected, setSelected] = useState(null);
 
   
-  // Boolean used to show or hide the detailed Trekmark Trip Canvas
+  // Boolean to show or hide detailed Trekmark Trip Canvas
   const [detailOpen, setDetailOpen] = useState(false);
 
   
-  // Temporary URL for the uploaded image stored locally
+  // Temporary URL for the currently uploaded image
   const [uploadPreview, setUploadPreview] = useState(null);
 
   
-  // Boolean used to show or hide the fake AI image scanning screen
+  // Boolean to show or hide the fake AI image processing page
   const [analyzing, setAnalyzing] = useState(false);
 
   
-  // Current image in large rotating image display
+  // Currently displayed image in the rotating gallery
   const [galleryIndex, setGalleryIndex] = useState(0);
+
+  // Tracks form used by user to submit a landmark.
+  const [submissionStatus, setSubmissionStatus] = useState('');
+  const [submissionImageUrl, setSubmissionImageUrl] = useState('');
 
   
   
   
-  // Advances cinematic destination gallery every 5.2 sec.
-  // Will cancel interval when component is destroyed via cleanup function.
+  // Advances cinematic destination gallery every 5.2 seconds.
+  // Will cancel interval on component cleanup.
   useEffect(() => {
     const t = setInterval(
       () => setGalleryIndex(i => (i + 1) % gallery.length),
@@ -528,13 +526,12 @@ function App() {
   
   
   
-  // Called when one of the globe markers are clicked. Selects the
-  // destination, closes any existing planner and scrolls down to the
-  // destination preview card.
+  // Called when clicking on a location on the globe. Selects the destination,
+  // hides any existing planner and scrolls down to the destination preview card.
   //
-  // We use the short timeout to give React time to render the new
-  // destination card before we scroll to it. Otherwise, we can sometimes
-  // scroll too early and end up in an awkward position. This is lowkey annoying.
+  // We use a timeout to give React time to render the new destination preview
+  // card before we scroll to it. We sometimes scroll too early and end up in an
+  // awkward position. This is lowkey annoying.
   const focusDestination = (d) => {
     setSelected(d);
     setDetailOpen(false);
@@ -549,8 +546,8 @@ function App() {
 
   
   
-  // Unselects the selected destination, hides the destination preview
-  // card and returns the user to the state of discovering the globe.
+  // Deselects the currently selected destination, hides the destination preview
+  // card and returns the user to exploring the globe.
   const clearDestination = () => {
     setSelected(null);
     setDetailOpen(false);
@@ -564,8 +561,8 @@ function App() {
 
   
   
-  // Opens the Trip Canvas for the image in the currently viewed cinematic
-  // gallery. Now the gallery serves a purpose and is not purely decorative.
+  // Opens the Trip Canvas for the currently displayed destination in the cinematic
+  // destination gallery. This gives the gallery a use and is not completely decorative.
   const planGalleryTrip = () => {
     const trip = gallery[galleryIndex]?.trip;
     if (!trip) return;
@@ -583,12 +580,12 @@ function App() {
   
   
   // Add the four prototype images to the Trip Canvas.
-  // Use individual image inputs rather than repeating the same
-  // image since it would be uninteresting to a travel planner.
+  // Individual image inputs are used rather than repeating an image because it
+  // would be uninteresting to a travel planner.
   //
-  // Creating this array up front results in a lot cleaner JSX below. Rather than
-  // manually creating four nearly-identical image components, we define the data
-  // once and have .map() handle the repetition for us.
+  // By creating this array upfront the JSX becomes much cleaner. Rather than having
+  // to create four almost identical image components manually, we define the data
+  // once and then use .map() to repeat the components.
   const plannerVisuals = selected ? [
     {
       kind: 'Destination view',
@@ -659,11 +656,20 @@ function App() {
     const formData = new FormData();
     formData.append('file', file);
 
+    // Keep the scanning animation visible long enough for the user to see it.
+    // The backend request still starts immediately, but the result will not be
+    // displayed until at least 2.5 seconds have passed.
+    const minimumScanTime = new Promise((resolve) => {
+      setTimeout(resolve, 2500);
+    });
+
     try {
       const response = await fetch(`${API_BASE_URL}/api/predict`, {
         method: 'POST',
         body: formData,
       });
+
+      await minimumScanTime;
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
@@ -682,6 +688,9 @@ function App() {
         id: `landmark-${landmark.id}`,
         landmarkId: landmark.id,
         name: landmark.name,
+        city: landmark.city,
+        state: landmark.state,
+        countryName: landmark.country,
         country: [
           landmark.city,
           landmark.state,
@@ -691,6 +700,11 @@ function App() {
         lng: landmark.longitude,
         confidence: Math.round(data.confidence * 100),
         hero: landmark.image || previewUrl,
+        categoryName: landmark.category_name
+          ? landmark.category_name
+              .replace('Category:', '')
+              .replaceAll('_', ' ')
+          : 'Recognized landmark',
         kicker: landmark.category_name
           ? landmark.category_name
               .replace('Category:', '')
@@ -709,6 +723,8 @@ function App() {
         doPrice: '$—',
         flight: 'Flight data coming next',
         recognitionMode: data.recognition_mode,
+        galleryImages: data.landmark_photos || [],
+        nearbyLandmarks: data.nearby_landmarks || [],
       };
 
       setSelected(backendDestination);
@@ -731,6 +747,61 @@ function App() {
       // Resetting the input lets the user select the exact same image again.
       e.target.value = '';
     }
+  };
+
+  // User landmark submission flow.
+  //
+  // The user can suggest a landmark for Trekmark by providing a landmark name,
+  // image URL and country. City, state, latitude and longitude are optional
+  // because not every landmark in the dataset has all of those values.
+  //
+  // The form is sent as multipart FormData so the backend can use the same
+  // request style later when direct image uploads are connected to S3.
+  const submitLandmark = async (e) => {
+    e.preventDefault();
+
+    // Store the form element before awaiting the backend response.
+    // React's event currentTarget should not be relied on after an await.
+    const formElement = e.currentTarget;
+    const form = new FormData(formElement);
+
+    setSubmissionStatus('submitting');
+
+    const optionalFields = ['city', 'state', 'lat', 'lon'];
+
+    optionalFields.forEach((field) => {
+      if (!form.get(field)?.toString().trim()) {
+        form.delete(field);
+      }
+    });
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/submission`, {
+        method: 'POST',
+        body: form,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(
+          errorData?.detail || 'Trekmark could not submit this landmark.'
+        );
+      }
+
+      formElement.reset();
+      setSubmissionImageUrl('');
+      setSubmissionStatus('success');
+    } catch (error) {
+      console.error('Landmark submission failed:', error);
+      setSubmissionStatus('error');
+    }
+  };
+
+  // Returns the submission section to a blank form so the user can add
+  // another landmark or retry after an unsuccessful submission.
+  const resetSubmission = () => {
+    setSubmissionImageUrl('');
+    setSubmissionStatus('');
   };
 
   return (
@@ -846,27 +917,82 @@ function App() {
                 className="selected-image"
                 style={{backgroundImage:`linear-gradient(90deg,rgba(4,7,11,.88),rgba(4,7,11,.08)),url(${selected.hero})`}}
               />
-              <div className="selected-copy">
-                <div className="destination-meta">
-                  <MapPin size={15}/> {selected.country}
-                  <span>{selected.confidence}% match confidence</span>
-                </div>
-                <h2>{selected.name}</h2>
-                <p>{selected.kicker}</p>
-                <div className="selected-actions">
-                  <button
-                    className="primary compact"
-                    onClick={() => {
-                      setDetailOpen(true);
-                      setTimeout(() => document.querySelector('#planner')?.scrollIntoView({behavior:'smooth'}), 100);
-                    }}
-                  >
-                    Build this trip <ArrowRight size={16}/>
-                  </button>
-                  <button className="ghost compact selected-reset" onClick={clearDestination}>
-                    See something else
-                  </button>
-                </div>
+              <div className={`selected-copy ${selected.recognitionMode ? 'recognized-copy' : ''}`}>
+                {selected.recognitionMode ? (
+                  <>
+                    {/*
+                      RECOGNIZED LANDMARK RESULT
+
+                      Uploaded images use this version of the destination card.
+                      It makes the recognition result, confidence, location and
+                      coordinates easy to see during the checkpoint demo.
+
+                      Preset globe destinations continue to use the original
+                      destination preview below.
+                    */}
+                    <div className="recognition-label">
+                      <span className="recognition-dot" />
+                      Recognized landmark
+                    </div>
+
+                    <h2>{selected.name}</h2>
+
+                    <div className="recognition-location">
+                      <MapPin size={16}/> {selected.country}
+                    </div>
+
+                    <div className="recognition-facts">
+                      <div>
+                        <span>Match confidence</span>
+                        <strong>{selected.confidence}%</strong>
+                      </div>
+                      <div>
+                        <span>Coordinates</span>
+                        <strong>
+                          {Number(selected.lat).toFixed(4)}, {Number(selected.lng).toFixed(4)}
+                        </strong>
+                      </div>
+                    </div>
+
+                    <div className="selected-actions">
+                      <button
+                        className="primary compact"
+                        onClick={() => {
+                          setDetailOpen(true);
+                          setTimeout(() => document.querySelector('#planner')?.scrollIntoView({behavior:'smooth'}), 100);
+                        }}
+                      >
+                        Build this trip <ArrowRight size={16}/>
+                      </button>
+                      <button className="ghost compact selected-reset" onClick={clearDestination}>
+                        Scan another photo
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="destination-meta">
+                      <MapPin size={15}/> {selected.country}
+                      <span>{selected.confidence}% match confidence</span>
+                    </div>
+                    <h2>{selected.name}</h2>
+                    <p>{selected.kicker}</p>
+                    <div className="selected-actions">
+                      <button
+                        className="primary compact"
+                        onClick={() => {
+                          setDetailOpen(true);
+                          setTimeout(() => document.querySelector('#planner')?.scrollIntoView({behavior:'smooth'}), 100);
+                        }}
+                      >
+                        Build this trip <ArrowRight size={16}/>
+                      </button>
+                      <button className="ghost compact selected-reset" onClick={clearDestination}>
+                        See something else
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             </motion.div>
           ) : (
@@ -942,75 +1068,495 @@ function App() {
       <AnimatePresence>
         {detailOpen && selected && (
           <motion.section id="planner" className="planner shell" initial={{opacity:0,y:40}} animate={{opacity:1,y:0}} exit={{opacity:0,y:20}}>
-            <div className="planner-head">
-              <div><div className="eyebrow">Trekmark trip canvas</div><h2>{selected.name}, in one glance.</h2><p>{selected.summary}</p></div>
-              <button className="icon-btn" onClick={()=>setDetailOpen(false)}><X/></button>
-            </div>
+            {selected.recognitionMode ? (
+              <>
+                {/*
+                  RECOGNIZED DESTINATION TRIP CANVAS
 
-            {
-}
-            {/* Travel recommendations based on images. The hope is that
-                the user can imagine themselves in the photo at the destination. */}
-            <div className="planner-media">
-              {/* This section is DRY because of the use of .map(). Same
-                  structure, different content. If we ever add another image card,
-                  we can mostly just update the array above rather than manually
-                  typing out another section of JSX. */}
-              {plannerVisuals.map((visual, index) => (
+                  The recognized landmark version of the Trip Canvas uses the
+                  location information returned from Neon instead of filling
+                  the page with fake travel recommendations.
+
+                  Flight, hotel, restaurant and nearby landmark cards remain
+                  visible so the user can see what Trekmark will add during
+                  the next integration phase.
+                */}
+                <div className="planner-head planner-head--recognized">
+                  <div>
+                    <div className="eyebrow">Trekmark trip canvas</div>
+                    <h2>Build a trip around {selected.name}.</h2>
+                    <p>
+                      Start with what Trekmark already knows about the landmark,
+                      then add live travel planning as those services are connected.
+                    </p>
+                  </div>
+                  <button className="icon-btn" onClick={()=>setDetailOpen(false)}><X/></button>
+                </div>
+
                 <div
-                  key={`${visual.kind}-${index}`}
-                  className={visual.className}
-                  style={{ backgroundImage: `linear-gradient(180deg, rgba(6,10,16,.08), rgba(6,10,16,.78)), url(${visual.image})` }}
+                  className="recognized-trip-hero"
+                  style={{
+                    backgroundImage:
+                      `linear-gradient(90deg, rgba(5,9,14,.88), rgba(5,9,14,.32)), url(${selected.hero})`
+                  }}
                 >
-                  <div className="planner-visual__copy">
-                    <span>{visual.kind}</span>
-                    <strong>{visual.title}</strong>
+                  <div className="recognized-trip-hero__copy">
+                    <span>Recognized destination</span>
+                    <h3>{selected.name}</h3>
+                    <p><MapPin size={15}/> {selected.country}</p>
+                    <div className="recognized-trip-confidence">
+                      {selected.confidence}% match confidence
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
 
-            {
+                {/*
+                  The Trip Canvas keeps the database details user-facing.
+                  City, state and country are shown when available, while
+                  internal identifiers and coordinates stay out of the UI.
+                */}
+                <div className="destination-profile">
+                  <div className="destination-profile__head">
+                    <div>
+                      <span>Destination profile</span>
+                      <h3>What Trekmark knows so far</h3>
+                    </div>
+
+                    <div className="destination-profile__actions">
+                      <button
+                        className="profile-explore-button"
+                        type="button"
+                        onClick={() => {
+                          const nextSection = document.querySelector(
+                            '.landmark-gallery-section, .nearby-landmarks-section, .planning-next-head'
+                          );
+
+                          nextSection?.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                          });
+                        }}
+                      >
+                        <span>Explore what&apos;s nearby</span>
+                        <ChevronDown size={17}/>
+                      </button>
+
+                      <span className="profile-source">Landmark database</span>
+                    </div>
+                  </div>
+
+                  <div className="destination-profile__grid destination-profile__grid--simple">
+                    <div className="profile-field">
+                      <span>Landmark</span>
+                      <strong>{selected.name || 'Not available'}</strong>
+                    </div>
+                    <div className="profile-field">
+                      <span>City</span>
+                      <strong>{selected.city || 'Not available'}</strong>
+                    </div>
+                    <div className="profile-field">
+                      <span>State / region</span>
+                      <strong>{selected.state || 'Not available'}</strong>
+                    </div>
+                    <div className="profile-field">
+                      <span>Country</span>
+                      <strong>{selected.countryName || 'Not available'}</strong>
+                    </div>
+                  </div>
+                </div>
+
+                {selected.galleryImages?.filter((image) => image && image !== selected.hero).length > 0 && (
+                  <div className="landmark-gallery-section">
+                    <div className="trip-section-heading">
+                      <div>
+                        <span>More of this landmark</span>
+                        <h3>See {selected.name} from another angle.</h3>
+                      </div>
+                      <p>
+                        Additional images associated with this landmark in Trekmark's database.
+                      </p>
+                    </div>
+
+                    <div className="landmark-gallery-grid">
+                      {selected.galleryImages
+                        .filter((image) => image && image !== selected.hero)
+                        .slice(0, 3)
+                        .map((image, index) => (
+                          <div
+                            className="landmark-gallery-image"
+                            key={`${image}-${index}`}
+                            style={{
+                              backgroundImage:
+                                `linear-gradient(180deg, rgba(5,9,14,.02), rgba(5,9,14,.3)), url(${image})`
+                            }}
+                          />
+                        ))}
+                    </div>
+                  </div>
+                )}
+
+                {selected.nearbyLandmarks?.length > 0 && (
+                  <div className="nearby-landmarks-section">
+                    <div className="trip-section-heading">
+                      <div>
+                        <span>Explore nearby</span>
+                        <h3>Landmarks within reach.</h3>
+                      </div>
+                      <p>
+                        Nearby places are ranked by distance from {selected.name}.
+                      </p>
+                    </div>
+
+                    <div className="nearby-landmarks-grid">
+                      {selected.nearbyLandmarks.slice(0, 3).map((landmark) => (
+                        <div className="nearby-landmark-card" key={landmark.id}>
+                          <div
+                            className="nearby-landmark-card__image"
+                            style={{
+                              backgroundImage:
+                                `linear-gradient(180deg, rgba(5,9,14,.02), rgba(5,9,14,.58)), url(${landmark.image || selected.hero})`
+                            }}
+                          >
+                            <span>{Math.round(landmark.distance_km)} km away</span>
+                          </div>
+
+                          <div className="nearby-landmark-card__copy">
+                            <strong>{landmark.name}</strong>
+                            <span>
+                              {[landmark.city, landmark.state, landmark.country]
+                                .filter(Boolean)
+                                .join(', ')}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="planning-next-head">
+                  <div>
+                    <span>Next planning layer</span>
+                    <h3>Turn the landmark into a trip.</h3>
+                  </div>
+                  <p>
+                    These cards are already part of the Trekmark experience.
+                    Live travel providers will populate them during the next phase.
+                  </p>
+                </div>
+
+                <div className="trip-grid trip-grid--future trip-grid--future-three">
+                  <div className="trip-card trip-card--future">
+                    <div
+                      className="future-card-image future-card-image--flight"
+                      style={{ backgroundImage: `linear-gradient(180deg, rgba(5,9,14,.06), rgba(5,9,14,.7)), url(${selected.hero})` }}
+                    />
+                    <div className="future-card-copy">
+                      <Plane/>
+                      <span>Flight</span>
+                      <strong>Routes to {selected.city || selected.countryName}</strong>
+                      <small>Live fares and departure options will be added in the next integration phase.</small>
+                    </div>
+                  </div>
+
+                  <div className="trip-card trip-card--future">
+                    <div
+                      className="future-card-image future-card-image--stay"
+                      style={{ backgroundImage: `linear-gradient(180deg, rgba(5,9,14,.06), rgba(5,9,14,.7)), url(${selected.hero})` }}
+                    />
+                    <div className="future-card-copy">
+                      <Hotel/>
+                      <span>Stay</span>
+                      <strong>Hotels near {selected.name}</strong>
+                      <small>Future results will use the recognized landmark as the center of the stay search.</small>
+                    </div>
+                  </div>
+
+                  <div className="trip-card trip-card--future">
+                    <div
+                      className="future-card-image future-card-image--eat"
+                      style={{ backgroundImage: `linear-gradient(180deg, rgba(5,9,14,.06), rgba(5,9,14,.7)), url(${selected.hero})` }}
+                    />
+                    <div className="future-card-copy">
+                      <UtensilsCrossed/>
+                      <span>Eat</span>
+                      <strong>Dining around {selected.city || selected.name}</strong>
+                      <small>Nearby restaurants, ratings and pricing will populate this card later.</small>
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="planner-head">
+                  <div><div className="eyebrow">Trekmark trip canvas</div><h2>{selected.name}, in one glance.</h2><p>{selected.summary}</p></div>
+                  <button className="icon-btn" onClick={()=>setDetailOpen(false)}><X/></button>
+                </div>
+
+                {
 }
-            {/* Cards that give a short summary of the trip planning.
-                Prices shown here are demo/placeholder until travel APIs are connected. */}
-            <div className="trip-grid">
-              <div className="trip-card">
-                <Plane/>
-                <span>Flight snapshot</span>
-                <strong>{selected.flight}</strong>
-                <small>Sample fare · economy</small>
-              </div>
-              <div className="trip-card">
-                <Hotel/>
-                <span>Stay</span>
-                <strong>{selected.hotel}</strong>
-                <small>{selected.stayPrice || '$—'} · central location</small>
-              </div>
-              <div className="trip-card">
-                <UtensilsCrossed/>
-                <span>Eat</span>
-                <strong>{selected.restaurant}</strong>
-                <small>{selected.eatPrice || '$—'} · popular nearby choice</small>
-              </div>
-              <div className="trip-card">
-                <Star/>
-                <span>Do</span>
-                <strong>{selected.attraction}</strong>
-                <small>{selected.doPrice || '$—'} · must-see experience</small>
-              </div>
-            </div>
-            {
+                {/* Travel recommendations based on images. The hope is that
+                    the user can imagine themselves in the photo at the destination. */}
+                <div className="planner-media">
+                  {/* This section is DRY because of the use of .map(). Same
+                      structure, different content. If we ever add another image card,
+                      we can mostly just update the array above rather than manually
+                      typing out another section of JSX. */}
+                  {plannerVisuals.map((visual, index) => (
+                    <div
+                      key={`${visual.kind}-${index}`}
+                      className={visual.className}
+                      style={{ backgroundImage: `linear-gradient(180deg, rgba(6,10,16,.08), rgba(6,10,16,.78)), url(${visual.image})` }}
+                    >
+                      <div className="planner-visual__copy">
+                        <span>{visual.kind}</span>
+                        <strong>{visual.title}</strong>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {
 }
-            {/* A sample 3-day trip plan for the selected destination.
-                Also demo data for the prototype. */}
-            <div className="itinerary">
-              <div className="itinerary-title"><div><span>Suggested 3-day rhythm</span><h3>Enough structure. Still feels like a vacation.</h3></div><span className="ai-pill"><Sparkles size={14}/> AI assembled</span></div>
-              {[['Day 1','Arrive + orient','Check in, walk the central district, then keep the first evening flexible.'],['Day 2','Signature day',`Start with ${selected.attraction}, leave room for a long lunch, then explore one nearby neighborhood.`],['Day 3','Local texture','Slow morning, one hidden-gem stop, then an easy route back toward departure.']].map(([d,t,b])=><div className="day" key={d}><span>{d}</span><div><strong>{t}</strong><p>{b}</p></div></div>)}
-            </div>
+                {/* Cards that give a short summary of the trip planning.
+                    Prices shown here are demo/placeholder until travel APIs are connected. */}
+                <div className="trip-grid">
+                  <div className="trip-card">
+                    <Plane/>
+                    <span>Flight snapshot</span>
+                    <strong>{selected.flight}</strong>
+                    <small>Sample fare · economy</small>
+                  </div>
+                  <div className="trip-card">
+                    <Hotel/>
+                    <span>Stay</span>
+                    <strong>{selected.hotel}</strong>
+                    <small>{selected.stayPrice || '$—'} · central location</small>
+                  </div>
+                  <div className="trip-card">
+                    <UtensilsCrossed/>
+                    <span>Eat</span>
+                    <strong>{selected.restaurant}</strong>
+                    <small>{selected.eatPrice || '$—'} · popular nearby choice</small>
+                  </div>
+                  <div className="trip-card">
+                    <Star/>
+                    <span>Do</span>
+                    <strong>{selected.attraction}</strong>
+                    <small>{selected.doPrice || '$—'} · must-see experience</small>
+                  </div>
+                </div>
+                {
+}
+                {/* A sample 3-day trip plan for the selected destination.
+                    Also demo data for the prototype. */}
+                <div className="itinerary">
+                  <div className="itinerary-title"><div><span>Suggested 3-day rhythm</span><h3>Enough structure. Still feels like a vacation.</h3></div><span className="ai-pill"><Sparkles size={14}/> AI assembled</span></div>
+                  {[['Day 1','Arrive + orient','Check in, walk the central district, then keep the first evening flexible.'],['Day 2','Signature day',`Start with ${selected.attraction}, leave room for a long lunch, then explore one nearby neighborhood.`],['Day 3','Local texture','Slow morning, one hidden-gem stop, then an easy route back toward departure.']].map(([d,t,b])=><div className="day" key={d}><span>{d}</span><div><strong>{t}</strong><p>{b}</p></div></div>)}
+                </div>
+              </>
+            )}
           </motion.section>
         )}
       </AnimatePresence>
+
+      {
+
+
+}
+      {/*
+        COMMUNITY LANDMARK SUBMISSION
+
+        Users can suggest a landmark that is not already represented in Trekmark.
+        City, state, latitude and longitude are optional because those values are
+        not available for every landmark.
+      */}
+      <section
+        className={`submission-section shell ${
+          submissionStatus === 'success'
+            ? 'submission-section--success'
+            : submissionStatus === 'error'
+              ? 'submission-section--error'
+              : ''
+        }`}
+        id="submit-landmark"
+      >
+        {submissionStatus === 'success' || submissionStatus === 'error' ? (
+          <motion.div
+            className="submission-result"
+            initial={{ opacity: 0, scale: .97, y: 12 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: .38, ease: 'easeOut' }}
+          >
+            <motion.div
+              className={`submission-result__icon ${
+                submissionStatus === 'success'
+                  ? 'submission-result__icon--success'
+                  : 'submission-result__icon--error'
+              }`}
+              initial={{ scale: .5, rotate: -12 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ delay: .12, type: 'spring', stiffness: 260, damping: 18 }}
+            >
+              {submissionStatus === 'success' ? (
+                <Sparkles size={30}/>
+              ) : (
+                <X size={30}/>
+              )}
+            </motion.div>
+
+            <div className="submission-result__copy">
+              <div className="eyebrow">
+                {submissionStatus === 'success'
+                  ? 'Submission received'
+                  : 'Something went wrong'}
+              </div>
+
+              <h2>
+                {submissionStatus === 'success'
+                  ? 'Thanks for helping Trekmark grow.'
+                  : 'We could not submit that landmark.'}
+              </h2>
+
+              <p>
+                {submissionStatus === 'success'
+                  ? 'Your landmark has been saved and can now be reviewed before it is added to Trekmark.'
+                  : 'Your information was not confirmed as saved. You can return to the form and try again.'}
+              </p>
+            </div>
+
+            <button
+              className="primary submission-result__button"
+              type="button"
+              onClick={resetSubmission}
+            >
+              {submissionStatus === 'success'
+                ? 'Add another landmark'
+                : 'Try again'}
+              <ArrowRight size={16}/>
+            </button>
+          </motion.div>
+        ) : (
+          <>
+            <div className="submission-copy">
+              <div className="eyebrow">Help Trekmark grow</div>
+              <h2>Know a landmark we should add?</h2>
+              <p>
+                Send us the landmark and an image source. Your submission can be
+                reviewed before it is added to Trekmark's landmark collection.
+              </p>
+
+              {submissionImageUrl ? (
+                <div
+                  className="submission-preview"
+                  style={{ backgroundImage: `linear-gradient(180deg, rgba(5,9,14,.04), rgba(5,9,14,.58)), url(${submissionImageUrl})` }}
+                >
+                  <span>Image preview</span>
+                </div>
+              ) : (
+                <div className="submission-preview submission-preview--empty">
+                  <Camera size={26}/>
+                  <span>Your image preview will appear here</span>
+                </div>
+              )}
+            </div>
+
+            <form className="submission-form" onSubmit={submitLandmark}>
+              <div className="submission-field submission-field--wide">
+                <label htmlFor="submission-name">Landmark name</label>
+                <input
+                  id="submission-name"
+                  name="name"
+                  type="text"
+                  placeholder="Example: Stirling Castle"
+                  required
+                />
+              </div>
+
+              <div className="submission-field submission-field--wide">
+                <label htmlFor="submission-image-url">Image URL</label>
+                <input
+                  id="submission-image-url"
+                  name="image_url"
+                  type="url"
+                  placeholder="https://example.com/landmark.jpg"
+                  value={submissionImageUrl}
+                  onChange={(e) => setSubmissionImageUrl(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="submission-field">
+                <label htmlFor="submission-city">City <span>Optional</span></label>
+                <input
+                  id="submission-city"
+                  name="city"
+                  type="text"
+                  placeholder="Stirling"
+                />
+              </div>
+
+              <div className="submission-field">
+                <label htmlFor="submission-state">State / region <span>Optional</span></label>
+                <input
+                  id="submission-state"
+                  name="state"
+                  type="text"
+                  placeholder="Scotland"
+                />
+              </div>
+
+              <div className="submission-field submission-field--wide">
+                <label htmlFor="submission-country">Country</label>
+                <input
+                  id="submission-country"
+                  name="country"
+                  type="text"
+                  placeholder="United Kingdom"
+                  required
+                />
+              </div>
+
+              <div className="submission-field">
+                <label htmlFor="submission-latitude">Latitude <span>Optional</span></label>
+                <input
+                  id="submission-latitude"
+                  name="lat"
+                  type="number"
+                  step="any"
+                  placeholder="56.1239"
+                />
+              </div>
+
+              <div className="submission-field">
+                <label htmlFor="submission-longitude">Longitude <span>Optional</span></label>
+                <input
+                  id="submission-longitude"
+                  name="lon"
+                  type="number"
+                  step="any"
+                  placeholder="-3.9478"
+                />
+              </div>
+
+              <div className="submission-form__footer">
+                <div className="submission-status">
+                  {submissionStatus === 'submitting' && 'Saving your landmark submission…'}
+                </div>
+
+                <button
+                  className="primary"
+                  type="submit"
+                  disabled={submissionStatus === 'submitting'}
+                >
+                  {submissionStatus === 'submitting' ? 'Submitting…' : 'Submit landmark'}
+                  <ArrowRight size={16}/>
+                </button>
+              </div>
+            </form>
+          </>
+        )}
+      </section>
 
       {
 
