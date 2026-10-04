@@ -1,4 +1,3 @@
-"""One upload -> ML prediction -> PostgreSQL landmark lookup."""
 from functools import lru_cache
 from io import BytesIO
 import logging
@@ -40,7 +39,6 @@ def lookup_landmark(landmark_id):
     url = os.getenv("DATABASE_URL")
     if not url:
         raise HTTPException(503, "Database connection is not configured.")
-    # Only the predicted ID selects the landmark; user input never becomes SQL.
     with psycopg.connect(url, connect_timeout=10, row_factory=dict_row) as conn:
         conn.execute("SET LOCAL statement_timeout = 10000")
         return conn.execute("""
@@ -98,7 +96,5 @@ def predict(image: UploadFile = File(...)):
             "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
             "landmark": landmark}
 
-
-# A built frontend and API can run from the same server; Vite proxies during development.
 if (ROOT / "frontend/dist").is_dir():
     app.mount("/", StaticFiles(directory=ROOT / "frontend/dist", html=True), name="frontend")

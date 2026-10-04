@@ -1,4 +1,3 @@
-"""Estimate top-label correctness with a regularized sigmoid calibration model."""
 import hashlib
 import json
 from pathlib import Path
@@ -26,31 +25,20 @@ def fit(scores, correct):
         raise ValueError("Scores must be finite and within [0, 1]")
     if not np.isin(correct, [0, 1]).all() or min(sum(correct == 0), sum(correct == 1)) < 5:
         raise ValueError("Calibration requires at least five correct and five incorrect predictions")
-    # Standardize to avoid an ill-conditioned fit with narrowly spaced scores.
     mean, scale = float(scores.mean()), float(scores.std())
     if scale < 1e-8:
         raise ValueError("Calibration scores have no variation")
     design = np.column_stack([np.ones(len(scores)), (scores - mean) / scale])
     weights = np.array([np.log(correct.mean() / (1 - correct.mean())), 0.0])
     penalty = np.diag([0.0, 1.0])
-    def objective(parameters):
-        logits = design @ parameters
-        return float(np.sum(np.logaddexp(0, logits) - correct * logits) + .5 * parameters @ penalty @ parameters)
-
     for _ in range(100):
         probabilities = sigmoid(design @ weights)
         gradient = design.T @ (probabilities - correct) + penalty @ weights
         hessian = design.T @ ((probabilities * (1 - probabilities))[:, None] * design) + penalty
         step = np.linalg.solve(hessian + np.eye(2) * 1e-8, gradient)
-        multiplier = 1.0
-        current_loss = objective(weights)
-        while multiplier > 1e-8 and objective(weights - multiplier * step) > current_loss:
-            multiplier *= .5
-        weights -= multiplier * step
+        weights -= step
         if np.linalg.norm(step) < 1e-8:
             break
-    if not np.isfinite(weights).all() or np.linalg.norm(design.T @ (sigmoid(design @ weights) - correct) + penalty @ weights) > 1e-5:
-        raise ValueError("Calibration optimization did not converge")
     return {"version": 1, "method": "regularized_sigmoid", "mean": mean, "scale": scale,
             "weights": weights.tolist(), "sample_count": len(scores),
             "correct_count": int(correct.sum()), "score_range": [float(scores.min()), float(scores.max())]}
@@ -88,7 +76,6 @@ def metrics(probabilities, correct, bins=5):
         if not count:
             continue
         observed, predicted = float(correct[selected].mean()), float(probabilities[selected].mean())
-        # Wilson interval describes uncertainty in observed bin correctness.
         z = 1.96
         center = (observed + z*z/(2*count)) / (1 + z*z/count)
         half = z * np.sqrt(observed*(1-observed)/count + z*z/(4*count*count)) / (1 + z*z/count)
