@@ -69,8 +69,7 @@ def new_submission(
     return "Accepted"
 
 
-# TO-DO: ADMIN NEEDS TO DETERMINE WHAT LANDMARK ID SHOULD BE FOR EACH LANDMARK. USERS WILL ONLY INPUT A LANDMARK NAME
-# THIS MEANS THAT WHEN A USER SUBMITS A LANDMARK, WE NEED TO MAP IT TO THE CORRECT LANDMARK ID IN OUR DATABASE.
+# Make sure in front end that admin inputs a category_name
 @app.post("/submissions/approve/{submission_id}")
 def approve_submission(submission_id: int, info: SubmissionInfo):
     """Post for admin approving a submission"""
@@ -114,44 +113,80 @@ def reject_submission(submission_id: int):
     return {"message": "Submission rejected"}
 
 
+def get_approved(connection):
+    """Fetch all approved submissions from the user_submissions table"""
+    approved = connection.execute(text("""
+        SELECT * FROM user_submissions
+        WHERE status = 'approved'
+    """))
+    return approved
+
+
 def fetch_landmark_id(connection, category_name: str):
     """Fetch the landmark_id for a given category_name from the training_data table, or create one"""
     result = connection.execute(
         text("""
         SELECT landmark_id FROM training_data
-        WHERE category_name = :category_name
+        WHERE category_name = :category_name 
+        LIMIT 1
         """),
         {"category_name": category_name},
     ).scalar()
     if result is not None:
         return result
     else:
-        new_id = connection.execute(
-            text("""
+        new_id = connection.execute(text("""
             SELECT COALESCE(MAX(landmark_id), 0) + 1
             FROM training_data""")).scalar()
         return new_id
 
 
-def move_approved(connection, category_name, landmark_id):
+def move_approved(connection, landmark_id, submission):
     """Function to move approved submissions to the training_data table"""
+    connection.execute(
+        text("""
+        INSERT INTO training_data (id, url, landmark_id, category_name, name, lat, lon, country, city, state)
+        VALUES (:id, :url, :landmark_id, :category_name, :name, :lat, :lon, :country, :city, :state)
+        """),
+        {
+            "id": uuid.uuid4().hex[:16],
+            "url": submission.url,
+            "landmark_id": landmark_id,
+            "category_name": submission.category_name,
+            "name": submission.name,
+            "lat": submission.lat,
+            "lon": submission.lon,
+            "country": submission.country,
+            "city": submission.city,
+            "state": submission.state,
+        },
+    )
+
+    connection.execute(  # mark the submission as migrated
+        text("""
+        UPDATE user_submissions
+        SET status = 'migrated'
+        WHERE submission_id = :submission_id
+        """),
+        {"submission_id": submission.submission_id},
+    )
 
 
-# This function can be called at the end of every admin session to push all landmarks that meet he approval threshold
-# to the training_data table
-# TO-DO: we need logic for generating a new unique id for each row once it is inserted into the training data table
+# This function can be called at the end of every admin session
 @app.post("/clean")
 def clean_tables():
     """Post method for moving entries from user_submission table to training_data table"""
-    with engine.begin as connection:
-        approved = connection.execute(text("""
-            SELECT * FROM user_submissions
-            WHERE status = 'approved'
-            """)).fetchall()
 
-        for category_name in approved:
-            landmark_id = fetch_landmark_id(connection, category_name)
+    migrate_count = 0
+    with engine.begin() as connection:
+        approved_submission = get_approved(connection)
 
-        move_approved(connection, approved)
+        for submission in approved_submission:
+            new_landmark_id = fetch_landmark_id(connection, submission.category_name)
+            move_approved(connection, new_landmark_id, submission)
+            migrate_count += 1
 
-    return {}  # TO-DO: FIGURE OUT WHAT RETURN SHOULD BE
+        if migrate_count == 0:
+            return {"message": "no approved submissions found"}
+
+    return {"message": f"successfully migrated {migrate_count} submissions"}
