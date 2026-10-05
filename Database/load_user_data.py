@@ -5,6 +5,7 @@
 #    we want to move all the related rows from the holding table to the actual training_data table
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
@@ -19,8 +20,14 @@ BASE_URL = os.environ["ENDPOINT_URL_S3"] + "/" + BUCKET_NAME
 # THRESHOLD = 30 # We will use this later if we want to
 
 app = FastAPI(title="Ladmark Submission API")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-engine = create_engine(os.environ["DATABASE_URL"])  # Neon connection object
+engine = create_engine(os.environ["DATABASE_URL"], pool_pre_ping=True)  # Neon connection object
 
 client = boto3.client(
     "s3",
@@ -33,6 +40,7 @@ client = boto3.client(
 
 class SubmissionInfo(BaseModel):
     category_name: str
+    name: str | None = None
     lat: float
     lon: float
     city: str | None = None
@@ -81,8 +89,19 @@ def new_submission(
     return "Accepted"
 
 
+@app.get("/admin/pending")
+def get_pending_submissions():
+    """Get all pending submissions for admin review"""
+    with engine.begin() as connection:
+        result = connection.execute(text("""
+            SELECT * FROM user_submissions
+            WHERE status = 'pending'
+        """))
+        return [dict(row._mapping) for row in result]
+
+
 # Make sure in front end that admin inputs a category_name
-@app.post("/submissions/approve/{submission_id}")
+@app.post("/admin/approve/{submission_id}")
 def approve_submission(submission_id: int, info: SubmissionInfo):
     """Post for admin approving a submission"""
     with engine.begin() as connection:
@@ -91,6 +110,7 @@ def approve_submission(submission_id: int, info: SubmissionInfo):
             UPDATE user_submissions
             SET status = 'approved',
             category_name = :category_name,
+            name = :name,
             lat = :lat,
             lon = :lon,
             city = :city,
@@ -100,6 +120,7 @@ def approve_submission(submission_id: int, info: SubmissionInfo):
             {
                 "submission_id": submission_id,
                 "category_name": info.category_name,
+                "name": info.name,
                 "lat": info.lat,
                 "lon": info.lon,
                 "city": info.city,
@@ -196,7 +217,7 @@ def move_approved(connection, landmark_id, submission):
 
 
 # This function can be called at the end of every admin session
-@app.post("/clean")
+@app.post("/admin/clean")
 def clean_tables():
     """Post method for moving entries from user_submission table to training_data table"""
 
