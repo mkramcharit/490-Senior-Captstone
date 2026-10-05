@@ -27,7 +27,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-engine = create_engine(os.environ["DATABASE_URL"], pool_pre_ping=True)  # Neon connection object
+engine = create_engine(
+    os.environ["DATABASE_URL"], pool_pre_ping=True
+)  # Neon connection object
 
 client = boto3.client(
     "s3",
@@ -73,8 +75,8 @@ def new_submission(
     with engine.begin() as connection:
         connection.execute(
             text("""
-        INSERT INTO user_submissions (url, name, lat, lon, city, state, country)
-        VALUES (:url, :name, :lat, :lon, :city, :state, :country)"""),
+            INSERT INTO user_submissions (url, name, lat, lon, city, state, country)
+            VALUES (:url, :name, :lat, :lon, :city, :state, :country)"""),
             {
                 "url": url,
                 "name": name,
@@ -85,8 +87,22 @@ def new_submission(
                 "country": country,
             },
         )
-
     return "Accepted"
+
+
+@app.get("/admin/TrainSearch/{name}")
+def train_search(name: str):
+    """Search training_data table for specific name"""
+    with engine.begin() as connection:
+        result = connection.execute(
+            text("""
+            SELECT * FROM training_data
+            WHERE name = :name"""),
+            {
+                "name": name,
+            },
+        )
+        return [dict(row._mapping) for row in result]
 
 
 @app.get("/admin/pending")
@@ -98,6 +114,26 @@ def get_pending_submissions():
             WHERE status = 'pending'
         """))
         return [dict(row._mapping) for row in result]
+
+
+@app.post("/admin/unmark/{submission_id}")
+def unmark_approved(submission_id: int):
+    """Post for admin changing a submissision from approved to pending"""
+    with engine.begin() as connection:
+        result = connection.execute(
+            text("""
+            UPDATE user_submissions
+            SET status = 'pending'
+            WHERE submission_id = :submission_id"""),
+            {
+                "submission_id": submission_id,
+            },
+        )
+
+    if result.rowcount == 0:
+        raise HTTPException(404, detail="Error: No matching item")
+
+    return {"message": "Submission unmarked"}
 
 
 # Make sure in front end that admin inputs a category_name
