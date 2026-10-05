@@ -19,14 +19,15 @@ BASE_URL = os.environ["ENDPOINT_URL_S3"] + "/" + BUCKET_NAME
 # THRESHOLD = 30 # We will use this later if we want to
 
 app = FastAPI(title="Ladmark Submission API")
+
 engine = create_engine(os.environ["DATABASE_URL"])  # Neon connection object
 
 client = boto3.client(
     "s3",
-    region=os.environ["REGION"],
-    endpoint_url_s3=os.environ["ENDPOINT_URL_S3"],
-    token_id=os.environ["TOKEN_ID"],
-    s3_secret_access_key=os.environ["S3_SECRET_ACCESS_KEY"],
+    region_name=os.environ["REGION"],
+    endpoint_url=os.environ["ENDPOINT_URL_S3"],
+    aws_access_key_id=os.environ["TOKEN_ID"],
+    aws_secret_access_key=os.environ["S3_SECRET_ACCESS_KEY"],
 )
 
 
@@ -43,7 +44,7 @@ def upload_image(image: UploadFile):
     """Function to upload image to S3 bucket"""
     extension = image.filename.split(".")[-1] if "." in image.filename else "jpg"
 
-    key = f"{uuid.uuid4().hex}{extension}"
+    key = f"{uuid.uuid4().hex}.{extension}"
     client.upload_fileobj(image.file, BUCKET_NAME, key)
 
     return f"{BASE_URL}/{key}"
@@ -62,9 +63,20 @@ def new_submission(
     """Post method for user submission"""
     url = upload_image(image)
     with engine.begin() as connection:
-        connection.execute(text("""
+        connection.execute(
+            text("""
         INSERT INTO user_submissions (url, name, lat, lon, city, state, country)
-        VALUES (:url, :name, :lat, :lon, :city, :state, :country)"""))
+        VALUES (:url, :name, :lat, :lon, :city, :state, :country)"""),
+            {
+                "url": url,
+                "name": name,
+                "lat": lat,
+                "lon": lon,
+                "city": city,
+                "state": state,
+                "country": country,
+            },
+        )
 
     return "Accepted"
 
@@ -78,6 +90,12 @@ def approve_submission(submission_id: int, info: SubmissionInfo):
             text("""
             UPDATE user_submissions
             SET status = 'approved',
+            category_name = :category_name,
+            lat = :lat,
+            lon = :lon,
+            city = :city,
+            state = :state,
+            country = :country
             WHERE submission_id = :submission_id"""),
             {
                 "submission_id": submission_id,
@@ -103,8 +121,11 @@ def reject_submission(submission_id: int):
         result = connection.execute(
             text("""
             UPDATE user_submissions
-            SET status = 'rejected',
+            SET status = 'rejected'
             WHERE submission_id = :submission_id"""),
+            {
+                "submission_id": submission_id,
+            },
         )
 
     if result.rowcount == 0:
@@ -168,7 +189,9 @@ def move_approved(connection, landmark_id, submission):
         SET status = 'migrated'
         WHERE submission_id = :submission_id
         """),
-        {"submission_id": submission.submission_id},
+        {
+            "submission_id": submission.submission_id,
+        },
     )
 
 
