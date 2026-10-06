@@ -90,6 +90,7 @@ def new_submission(
     return "Accepted"
 
 
+# To-do: put a sidebar on the admin page where the admin can search for training data by name.
 @app.get("/admin/TrainSearch/{name}")
 def train_search(name: str):
     """Search training_data table for specific name"""
@@ -116,6 +117,28 @@ def get_pending_submissions():
         return [dict(row._mapping) for row in result]
 
 
+@app.get("/admin/non-migrated")
+def get_non_migrated_submissions():
+    """Get all non-migrated submissions for admin review"""
+    with engine.begin() as connection:
+        result = connection.execute(text("""
+            SELECT * FROM user_submissions
+            WHERE status = 'approved' or status = 'rejected'
+        """))
+        return [dict(row._mapping) for row in result]
+
+
+@app.get("/admin/migrated")
+def get_migrated_submissions():
+    """Get row data for migrated submissions from migrated_submissions table"""
+    with engine.begin() as connection:
+        result = connection.execute(
+            text("""
+            SELECT * FROM migrated_submissions
+        """))
+        return [dict(row._mapping) for row in result]
+
+
 @app.post("/admin/unmark/{submission_id}")
 def unmark_approved(submission_id: int):
     """Post for admin changing a submissision from approved to pending"""
@@ -136,7 +159,8 @@ def unmark_approved(submission_id: int):
     return {"message": "Submission unmarked"}
 
 
-# Make sure in front end that admin inputs a category_name
+# To-do: edit this to automatically append Category: to the category_name before storing it in the database
+# also, enforce camel case.
 @app.post("/admin/approve/{submission_id}")
 def approve_submission(submission_id: int, info: SubmissionInfo):
     """Post for admin approving a submission"""
