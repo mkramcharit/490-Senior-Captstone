@@ -90,7 +90,7 @@ def new_submission(
     return "Accepted"
 
 
-# To-do: put a sidebar on the admin page where the admin can search for training data by name.
+# To-do: firgure out a way to make this a progressive search
 @app.get("/admin/TrainSearch/{name}")
 def train_search(name: str):
     """Search training_data table for specific name"""
@@ -132,13 +132,13 @@ def get_non_migrated_submissions():
 def get_migrated_submissions():
     """Get row data for migrated submissions from migrated_submissions table"""
     with engine.begin() as connection:
-        result = connection.execute(
-            text("""
+        result = connection.execute(text("""
             SELECT * FROM migrated_submissions
         """))
         return [dict(row._mapping) for row in result]
 
 
+# change this, probably. instead of kicking it back to pending, just reject or approve again
 @app.post("/admin/unmark/{submission_id}")
 def unmark_approved(submission_id: int):
     """Post for admin changing a submissision from approved to pending"""
@@ -245,13 +245,14 @@ def fetch_landmark_id(connection, category_name: str):
 
 def move_approved(connection, landmark_id, submission):
     """Function to move approved submissions to the training_data table"""
+    id = uuid.uuid4().hex[:16]
     connection.execute(
         text("""
         INSERT INTO training_data (id, url, landmark_id, category_name, name, lat, lon, country, city, state)
         VALUES (:id, :url, :landmark_id, :category_name, :name, :lat, :lon, :country, :city, :state)
         """),
         {
-            "id": uuid.uuid4().hex[:16],
+            "id": id,
             "url": submission.url,
             "landmark_id": landmark_id,
             "category_name": submission.category_name,
@@ -264,10 +265,28 @@ def move_approved(connection, landmark_id, submission):
         },
     )
 
-    connection.execute(  # mark the submission as migrated
+    connection.execute(
         text("""
-        UPDATE user_submissions
-        SET status = 'migrated'
+            INSERT INTO migrated_submissions (id, url, landmark_id, category_name, name, lat, lon, country, city, state)
+            VALUES (:id, :url, :landmark_id, :category_name, :name, :lat, :lon, :country, :city, :state)
+            """),
+        {
+            "id": id,
+            "url": submission.url,
+            "landmark_id": landmark_id,
+            "category_name": submission.category_name,
+            "name": submission.name,
+            "lat": submission.lat,
+            "lon": submission.lon,
+            "country": submission.country,
+            "city": submission.city,
+            "state": submission.state,
+        },
+    )
+
+    connection.execute(  # delete the submission from the user_submissions table
+        text("""
+        DELETE FROM user_submissions
         WHERE submission_id = :submission_id
         """),
         {
@@ -276,11 +295,9 @@ def move_approved(connection, landmark_id, submission):
     )
 
 
-# This function can be called at the end of every admin session
 @app.post("/admin/clean")
 def clean_tables():
-    """Post method for moving entries from user_submission table to training_data table"""
-
+    """Post method for migrating approved entries from user_submission table"""
     migrate_count = 0
     with engine.begin() as connection:
         approved_submission = get_approved(connection)
