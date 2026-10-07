@@ -1,8 +1,6 @@
-# Three goals for this code:
-# 1. The user needs to be able to submit landmarks to be added to the database
-# 2. The admins need to be able to review landmarks and either reject or approve them
-# 3. Once we have enough (30) approved images for a landmark in our holding table,
-#    we want to move all the related rows from the holding table to the actual training_data table
+# This file contains the FastAPI code for handling admin review of user submissions
+#
+# 2026 - Christopher Hochrein
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,7 +15,6 @@ load_dotenv()
 
 BUCKET_NAME = "image-bucket"
 BASE_URL = os.environ["ENDPOINT_URL_S3"] + "/" + BUCKET_NAME
-# THRESHOLD = 30 # We will use this later if we want to
 
 app = FastAPI(title="Ladmark Submission API")
 app.add_middleware(
@@ -25,7 +22,7 @@ app.add_middleware(
     allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
-)
+)  # CORS middleware for handling cross-origin requests
 
 engine = create_engine(
     os.environ["DATABASE_URL"], pool_pre_ping=True
@@ -37,7 +34,7 @@ client = boto3.client(
     endpoint_url=os.environ["ENDPOINT_URL_S3"],
     aws_access_key_id=os.environ["TOKEN_ID"],
     aws_secret_access_key=os.environ["S3_SECRET_ACCESS_KEY"],
-)
+)  # S3 client for handling image uploads
 
 
 class SubmissionInfo(BaseModel):
@@ -91,7 +88,7 @@ def new_submission(
 
 
 # To-do: firgure out a way to make this a progressive search
-@app.get("/admin/TrainSearch/{name}")
+@app.get("/admin/train-search/{name}")
 def train_search(name: str):
     """Search training_data table for specific name"""
     with engine.begin() as connection:
@@ -156,7 +153,7 @@ def unmark_approved(submission_id: int):
     if result.rowcount == 0:
         raise HTTPException(404, detail="Error: No matching item")
 
-    return {"message": "Submission unmarked"}
+    return {"status": "Submission unmarked"}
 
 
 # To-do: edit this to automatically append Category: to the category_name before storing it in the database
@@ -192,7 +189,7 @@ def approve_submission(submission_id: int, info: SubmissionInfo):
     if result.rowcount == 0:
         raise HTTPException(404, detail="Error: No matching item")
 
-    return {"message": "Submission approved"}
+    return {"status": "Submission approved"}
 
 
 @app.post("/admin/reject/{submission_id}")
@@ -212,7 +209,7 @@ def reject_submission(submission_id: int):
     if result.rowcount == 0:
         raise HTTPException(404, detail="Error: No matching item")
 
-    return {"message": "Submission rejected"}
+    return {"status": "Submission rejected"}
 
 
 def get_approved(connection):
@@ -221,7 +218,7 @@ def get_approved(connection):
         SELECT * FROM user_submissions
         WHERE status = 'approved'
     """))
-    return approved
+    return approved.fetchall()
 
 
 def fetch_landmark_id(connection, category_name: str):
@@ -233,7 +230,7 @@ def fetch_landmark_id(connection, category_name: str):
         LIMIT 1
         """),
         {"category_name": category_name},
-    ).scalar()
+    ).scalar()  # scalar() because we only expect one result
     if result is not None:
         return result
     else:
@@ -244,7 +241,7 @@ def fetch_landmark_id(connection, category_name: str):
 
 
 def move_approved(connection, landmark_id, submission):
-    """Function to move approved submissions to the training_data table"""
+    """Function to move approved submissions to the training_data and migrated_submissions tables"""
     id = uuid.uuid4().hex[:16]
     connection.execute(
         text("""
@@ -284,7 +281,7 @@ def move_approved(connection, landmark_id, submission):
         },
     )
 
-    connection.execute(  # delete the submission from the user_submissions table
+    connection.execute(
         text("""
         DELETE FROM user_submissions
         WHERE submission_id = :submission_id
@@ -298,16 +295,28 @@ def move_approved(connection, landmark_id, submission):
 @app.post("/admin/clean")
 def clean_tables():
     """Post method for migrating approved entries from user_submission table"""
-    migrate_count = 0
+    migrate_count = []
+    fail_count = []
+
     with engine.begin() as connection:
         approved_submission = get_approved(connection)
-
         for submission in approved_submission:
-            new_landmark_id = fetch_landmark_id(connection, submission.category_name)
-            move_approved(connection, new_landmark_id, submission)
-            migrate_count += 1
+            # We use a try/except block so we can continue processing other submissions even if one fails
+            try:
+                # This prevents duplicates if the move_approved function fails partway through (not sure if that can happen)
+                with (connection.begin_nested()): 
+                    new_landmark_id = fetch_landmark_id(
+                        connection, submission.category_name
+                    )
+                    move_approved(connection, new_landmark_id, submission)
+                migrate_count.append(submission.submission_id)
+            except Exception as e:
+                fail_count.append((submission.submission_id, str(e)))
 
-        if migrate_count == 0:
-            return {"message": "no approved submissions found"}
+        if not migrate_count and not fail_count:
+            return {"status": "no approved submissions found"}
 
-    return {"message": f"successfully migrated {migrate_count} submissions"}
+    return {
+        "migrated": migrate_count,
+        "failed": fail_count,
+    }
