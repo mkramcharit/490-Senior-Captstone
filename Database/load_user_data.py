@@ -87,20 +87,34 @@ def new_submission(
     return "Accepted"
 
 
-# To-do: firgure out a way to make this a progressive search
+# To-do: Set up an index to make this faster
 @app.get("/admin/train-search/{name}")
-def train_search(name: str):
-    """Search training_data table for specific name"""
+def train_search(input_name: str):
+    """Search training_data table for specific name and return the number of landmarks for that name"""
     with engine.begin() as connection:
         result = connection.execute(
             text("""
             SELECT * FROM training_data
-            WHERE name = :name"""),
+            WHERE name ILIKE :match
+            GROUP BY name, category_name, landmark_id
+            LIMIT 100"""),
             {
-                "name": name,
+                "match": f"%{input_name}%",
             },
         )
-        return [dict(row._mapping) for row in result]
+        result = [dict(row._mapping) for row in result]
+
+        landmark_count = connection.execute(
+            text("""
+            SELECT COUNT(DISTINCT name)
+            FROM training_data
+            WHERE name ILIKE :match"""),
+            {
+                "match": f"%{input_name}%",
+            },
+        ).scalar()
+
+        return {"results": result, "landmark_count": landmark_count}
 
 
 @app.get("/admin/pending")
@@ -135,7 +149,6 @@ def get_migrated_submissions():
         return [dict(row._mapping) for row in result]
 
 
-# To-do: change this, probably. instead of kicking it back to pending, just reject or approve again
 @app.post("/admin/unmark/{submission_id}")
 def unmark_approved(submission_id: int):
     """Post for admin changing a submissision from approved to pending"""
@@ -158,7 +171,7 @@ def unmark_approved(submission_id: int):
 
 # To-do: consider editing this function to clean up after messy admin input
 def format_category_name(category_name: str):
-    """Function ensures category_name is properly formatted as: 'Category:Category_Name'"""
+    """This function ensures category_name is properly formatted as: 'Category:Category_Name'"""
     names = category_name.split(" ")
     capital_names = []
 
@@ -321,9 +334,9 @@ def clean_tables():
                         connection, submission.category_name
                     )
                     move_approved(connection, new_landmark_id, submission)
-                migrate_count.append(submission.submission_id)
+                migrate_count.append({"submission_id": submission.submission_id, "status": "migrated"})
             except Exception as e:
-                fail_count.append((submission.submission_id, str(e)))
+                fail_count.append({"submission_id": submission.submission_id, "status": "Error: Migration failed"})
 
         if not migrate_count and not fail_count:
             return {"status": "no approved submissions found"}
