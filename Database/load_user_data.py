@@ -135,7 +135,7 @@ def get_migrated_submissions():
         return [dict(row._mapping) for row in result]
 
 
-# change this, probably. instead of kicking it back to pending, just reject or approve again
+# To-do: change this, probably. instead of kicking it back to pending, just reject or approve again
 @app.post("/admin/unmark/{submission_id}")
 def unmark_approved(submission_id: int):
     """Post for admin changing a submissision from approved to pending"""
@@ -156,11 +156,23 @@ def unmark_approved(submission_id: int):
     return {"status": "Submission unmarked"}
 
 
-# To-do: edit this to automatically append Category: to the category_name before storing it in the database
-# also, enforce camel case.
+# To-do: consider editing this function to clean up after messy admin input
+def format_category_name(category_name: str):
+    """Function ensures category_name is properly formatted as: 'Category:Category_Name'"""
+    names = category_name.split(" ")
+    capital_names = []
+
+    for name in names:
+        capital_names.append(name.capitalize())
+    proper_name = "_".join(capital_names)
+
+    return "Category:" + proper_name
+
+
 @app.post("/admin/approve/{submission_id}")
 def approve_submission(submission_id: int, info: SubmissionInfo):
     """Post for admin approving a submission"""
+    category_name = format_category_name(info.category_name)
     with engine.begin() as connection:
         result = connection.execute(
             text("""
@@ -176,7 +188,7 @@ def approve_submission(submission_id: int, info: SubmissionInfo):
             WHERE submission_id = :submission_id"""),
             {
                 "submission_id": submission_id,
-                "category_name": info.category_name,
+                "category_name": category_name,
                 "name": info.name,
                 "lat": info.lat,
                 "lon": info.lon,
@@ -303,8 +315,8 @@ def clean_tables():
         for submission in approved_submission:
             # We use a try/except block so we can continue processing other submissions even if one fails
             try:
-                # This prevents duplicates if the move_approved function fails partway through (not sure if that can happen)
-                with (connection.begin_nested()): 
+                # begin_nested prevents duplicates if the move_approved call fails partway through (not sure if that can happen)
+                with connection.begin_nested():
                     new_landmark_id = fetch_landmark_id(
                         connection, submission.category_name
                     )
