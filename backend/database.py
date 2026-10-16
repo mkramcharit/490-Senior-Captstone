@@ -9,7 +9,7 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 
 if not DATABASE_URL:
     raise RuntimeError(
-        "DATABASE_URL is missing. Add it to backend-integration/.env."
+        "DATABASE_URL is missing."
     )
 
 engine = create_engine(
