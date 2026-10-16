@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
-import boto3
+# import boto3
 import os
 import uuid
 
@@ -28,13 +28,13 @@ engine = create_engine(
     os.environ["DATABASE_URL"], pool_pre_ping=True
 )  # Neon connection object
 
-client = boto3.client(
-    "s3",
-    region_name=os.environ["REGION"],
-    endpoint_url=os.environ["ENDPOINT_URL_S3"],
-    aws_access_key_id=os.environ["TOKEN_ID"],
-    aws_secret_access_key=os.environ["S3_SECRET_ACCESS_KEY"],
-)  # S3 client for handling image uploads
+# client = boto3.client(
+#     "s3",
+#     region_name=os.environ["REGION"],
+#     endpoint_url=os.environ["ENDPOINT_URL_S3"],
+#     aws_access_key_id=os.environ["TOKEN_ID"],
+#     aws_secret_access_key=os.environ["S3_SECRET_ACCESS_KEY"],
+# )  # S3 client for handling image uploads
 
 
 class SubmissionInfo(BaseModel):
@@ -47,44 +47,44 @@ class SubmissionInfo(BaseModel):
     country: str | None = None
 
 
-def upload_image(image: UploadFile):
-    """Function to upload image to S3 bucket"""
-    extension = image.filename.split(".")[-1] if "." in image.filename else "jpg"
+# def upload_image(image: UploadFile):
+#     """Function to upload image to S3 bucket"""
+#     extension = image.filename.split(".")[-1] if "." in image.filename else "jpg"
 
-    key = f"{uuid.uuid4().hex}.{extension}"
-    client.upload_fileobj(image.file, BUCKET_NAME, key)
+#     key = f"{uuid.uuid4().hex}.{extension}"
+#     client.upload_fileobj(image.file, BUCKET_NAME, key)
 
-    return f"{BASE_URL}/{key}"
+#     return f"{BASE_URL}/{key}"
 
 
-@app.post("/submission")
-def new_submission(
-    image: UploadFile = File(...),
-    name: str = Form(..., description="Name of the landmark"),
-    lat: float | None = Form(None),
-    lon: float | None = Form(None),
-    city: str | None = Form(None),
-    state: str | None = Form(None),
-    country: str = Form(...),
-):
-    """Post method for user submission"""
-    url = upload_image(image)
-    with engine.begin() as connection:
-        connection.execute(
-            text("""
-            INSERT INTO user_submissions (url, name, lat, lon, city, state, country)
-            VALUES (:url, :name, :lat, :lon, :city, :state, :country)"""),
-            {
-                "url": url,
-                "name": name,
-                "lat": lat,
-                "lon": lon,
-                "city": city,
-                "state": state,
-                "country": country,
-            },
-        )
-    return "Accepted"
+# @app.post("/submission")
+# def new_submission(
+#     image: UploadFile = File(...),
+#     name: str = Form(..., description="Name of the landmark"),
+#     lat: float | None = Form(None),
+#     lon: float | None = Form(None),
+#     city: str | None = Form(None),
+#     state: str | None = Form(None),
+#     country: str = Form(...),
+# ):
+#     """Post method for user submission"""
+#     url = upload_image(image)
+#     with engine.begin() as connection:
+#         connection.execute(
+#             text("""
+#             INSERT INTO user_submissions (url, name, lat, lon, city, state, country)
+#             VALUES (:url, :name, :lat, :lon, :city, :state, :country)"""),
+#             {
+#                 "url": url,
+#                 "name": name,
+#                 "lat": lat,
+#                 "lon": lon,
+#                 "city": city,
+#                 "state": state,
+#                 "country": country,
+#             },
+#         )
+#     return "Accepted"
 
 
 # To-do: Set up an index to make this faster
@@ -341,6 +341,7 @@ def clean_tables():
         if not migrate_count and not fail_count:
             return {"status": "no approved submissions found"}
 
+    # To-Do: Figure out if these return values are a security risk
     return {
         "migrated": migrate_count,
         "failed": fail_count,
