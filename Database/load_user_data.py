@@ -2,19 +2,22 @@
 #
 # 2026 - Christopher Hochrein
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, HTTPException
+
+# from fastapi import File, Form, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
+
 # import boto3
 import os
 import uuid
 
 load_dotenv()
 
-BUCKET_NAME = "image-bucket"
-BASE_URL = os.environ["ENDPOINT_URL_S3"] + "/" + BUCKET_NAME
+# BUCKET_NAME = "image-bucket"
+# BASE_URL = os.environ["ENDPOINT_URL_S3"] + "/" + BUCKET_NAME
 
 app = FastAPI(title="Ladmark Submission API")
 app.add_middleware(
@@ -134,7 +137,7 @@ def get_non_migrated_submissions():
     with engine.begin() as connection:
         result = connection.execute(text("""
             SELECT * FROM user_submissions
-            WHERE status = 'approved' or status = 'rejected'
+            WHERE status = 'approved' OR status = 'rejected'
         """))
         return [dict(row._mapping) for row in result]
 
@@ -171,7 +174,7 @@ def unmark_approved(submission_id: int):
 
 # To-do: consider editing this function to clean up after messy admin input
 def format_category_name(category_name: str):
-    """This function ensures category_name is properly formatted as: 'Category:Category_Name'"""
+    """Ensures category_name is properly formatted as: 'Category:Category_Name'"""
     names = category_name.split(" ")
     capital_names = []
 
@@ -328,15 +331,22 @@ def clean_tables():
         for submission in approved_submission:
             # We use a try/except block so we can continue processing other submissions even if one fails
             try:
-                # begin_nested prevents duplicates if the move_approved call fails partway through (not sure if that can happen)
+                # begin_nested prevents duplicates if the move_approved call fails partway through (not sure if it can happen, but just being safe)
                 with connection.begin_nested():
                     new_landmark_id = fetch_landmark_id(
                         connection, submission.category_name
                     )
                     move_approved(connection, new_landmark_id, submission)
-                migrate_count.append({"submission_id": submission.submission_id, "status": "migrated"})
+                migrate_count.append(
+                    {"submission_id": submission.submission_id, "status": "migrated"}
+                )
             except Exception as e:
-                fail_count.append({"submission_id": submission.submission_id, "status": "Error: Migration failed"})
+                fail_count.append(
+                    {
+                        "submission_id": submission.submission_id,
+                        "status": "Error: Migration failed",
+                    }
+                )
 
         if not migrate_count and not fail_count:
             return {"status": "no approved submissions found"}
