@@ -37,13 +37,17 @@ require any change to either the backend or frontend data flow.
 """
 
 import os
+import secrets
+import time
 from io import BytesIO
 from typing import Optional
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image
+from pydantic import BaseModel
+import database as database_module
 
 from database import (
     check_database_connection,
@@ -80,6 +84,22 @@ DEMO_LANDMARK_ID = int(
 DEMO_CONFIDENCE = float(
     os.getenv("DEMO_CONFIDENCE", "0.94")
 )
+
+
+# ADMIN AUTHENTICATION
+#
+# Admin credentials are kept in .env instead of inside source control.
+# The backend creates a short-lived in-memory session token after login.
+# Restarting FastAPI clears all admin sessions, which is acceptable for
+# the current capstone prototype.
+ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
+ADMIN_SESSION_HOURS = int(os.getenv("ADMIN_SESSION_HOURS", "8"))
+
+if not ADMIN_PASSWORD:
+    print("WARNING: ADMIN_PASSWORD is not set. /admin login will be unavailable.")
+
+admin_sessions: dict[str, float] = {}
 
 
 # FASTAPI SETUP
@@ -590,4 +610,168 @@ def new_submission(
     return {
         "status": "accepted",
         "message": "Landmark submitted for review.",
+    }
+
+
+# ADMIN API
+#
+# These routes support the React /admin page. All admin data routes require
+# a Bearer token returned by /admin/login.
+class AdminLoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+class SubmissionInfo(BaseModel):
+    name: str
+    url: str
+    country: str
+    city: Optional[str] = None
+    state: Optional[str] = None
+    lat: Optional[float] = None
+    lon: Optional[float] = None
+    category_name: Optional[str] = None
+    landmark_id: Optional[int] = None
+
+
+def require_admin(authorization: Optional[str] = Header(None)):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Admin login required.")
+
+    token = authorization.removeprefix("Bearer ").strip()
+    expires_at = admin_sessions.get(token)
+
+    if not expires_at or expires_at <= time.time():
+        admin_sessions.pop(token, None)
+        raise HTTPException(status_code=401, detail="Admin session expired.")
+
+    return token
+
+
+
+def get_admin_database_function(name: str):
+    function = getattr(database_module, name, None)
+    if function is None:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                f"Admin database function '{name}' is not available yet. "
+                "Use Chris's updated database.py before using this admin action."
+            ),
+        )
+    return function
+
+
+@app.post("/admin/login")
+def admin_login(credentials: AdminLoginRequest):
+    if not ADMIN_PASSWORD:
+        raise HTTPException(
+            status_code=503,
+            detail="ADMIN_PASSWORD has not been configured on the backend.",
+        )
+
+    username_ok = secrets.compare_digest(credentials.username, ADMIN_USERNAME)
+    password_ok = secrets.compare_digest(credentials.password, ADMIN_PASSWORD)
+
+    if not username_ok or not password_ok:
+        raise HTTPException(status_code=401, detail="Invalid admin username or password.")
+
+    token = secrets.token_urlsafe(32)
+    admin_sessions[token] = time.time() + (ADMIN_SESSION_HOURS * 60 * 60)
+
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "expires_in_hours": ADMIN_SESSION_HOURS,
+    }
+
+
+@app.get("/admin/pending")
+def admin_pending(_: str = Depends(require_admin)):
+    function = get_admin_database_function("get_pending_submissions")
+    return {"submissions": [dict(row) for row in function()]}
+
+
+@app.get("/admin/non-migrated")
+def admin_non_migrated(_: str = Depends(require_admin)):
+    function = get_admin_database_function("get_non_migrated_submissions")
+    return {"submissions": [dict(row) for row in function()]}
+
+
+@app.get("/admin/search")
+def admin_training_search(name: str, _: str = Depends(require_admin)):
+    search_value = name.strip()
+    if not search_value:
+        return {"results": []}
+
+    function = get_admin_database_function("train_search")
+    return {"results": [dict(row) for row in function(search_value)]}
+
+
+@app.post("/admin/approve/{submission_id}")
+def admin_approve_submission(
+    submission_id: int,
+    info: SubmissionInfo,
+    _: str = Depends(require_admin),
+):
+    function = get_admin_database_function("approve_submission")
+    result = function(submission_id, info.model_dump())
+    return {
+        "status": "approved",
+        "message": "Submission approved. It will remain editable until migration.",
+        "result": result,
+    }
+
+
+@app.post("/admin/reject/{submission_id}")
+def admin_reject_submission(
+    submission_id: int,
+    _: str = Depends(require_admin),
+):
+    function = get_admin_database_function("reject_submission")
+    result = function(submission_id)
+    return {
+        "status": "rejected",
+        "message": "Submission rejected. The decision can still be changed before migration.",
+        "result": result,
+    }
+
+
+@app.put("/admin/submission/{submission_id}")
+def admin_update_submission(
+    submission_id: int,
+    info: SubmissionInfo,
+    _: str = Depends(require_admin),
+):
+    function = get_admin_database_function("update_submission")
+    result = function(submission_id, info.model_dump())
+    return {
+        "status": "updated",
+        "message": "Submission changes saved.",
+        "result": result,
+    }
+
+
+@app.delete("/admin/submission/{submission_id}")
+def admin_delete_submission(
+    submission_id: int,
+    _: str = Depends(require_admin),
+):
+    function = get_admin_database_function("delete_submission")
+    result = function(submission_id)
+    return {
+        "status": "deleted",
+        "message": "Submission deleted.",
+        "result": result,
+    }
+
+
+@app.post("/admin/clean")
+def admin_clean_tables(_: str = Depends(require_admin)):
+    function = get_admin_database_function("clean_tables")
+    result = function()
+    return {
+        "status": "migrated",
+        "message": "Approved submissions were migrated successfully.",
+        "result": result,
     }

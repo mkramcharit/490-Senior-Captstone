@@ -4,28 +4,29 @@
 /*
 TREKMARK FRONT END - main.jsx
 
-This file contains the majority of React functionality for the present
+This file holds the bulk of all React functionality within the current
 Trekmark prototype.
 
-The objective of the prototype is:
+The purpose of this prototype is:
 
-1. Enable a user to find a destination either by selecting a destination
-   from a globe, or by uploading an image.
-2. Show a preview card for a destination.
-3. Allow user to fill out a more specific "Trip Canvas" with an example of
-   flight, hotel, food, activities, pricing and itinerary for a destination.
-4. Keep the design highly visual and provide a travel product experience,
-   rather than a technical capstone/research project.
+1. Allow the user to find a destination by either clicking on a location
+   on the globe or by uploading an image.
+2. Show a preview card of the chosen destination.
+3. Enable the user to enter a more detailed “Trip Canvas” with sample
+   data for flight, hotel, food, attractions, pricing, and itinerary.
+4. Keep the interface very visual to provide a travel product experience
+   instead of a technical capstone/research project.
+
 */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
-// React 18+ uses createRoot to attach the app to index.html
+// React 18+ uses createRoot to mount the app to index.html
 import { createRoot } from 'react-dom/client';
 
 
-// Framer Motion is used for smooth transitions on fade in/out and sliding.
-// AnimatePresence is helpful when removing elements because CSS has very little
-// support for animating elements after they are removed by React.
+// Framer Motion is used for smooth transitions when sliding and fading in/out.
+// AnimatePresence is useful for removing elements as CSS has limited support
+// for animating elements after removal by React.
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ArrowRight,
@@ -44,42 +45,42 @@ import {
 } from 'lucide-react';
 
 
-// Styling, responsive design, globe styling, background animation, fixed
-// navigation bar and Trip Canvas layout are all defined here.
+// All styling, responsiveness, globe styling, background animation,
+// fixed navigation and Trip Canvas layout is defined here.
 import './styles.css';
+import AdminPage from './AdminPage.jsx';
 
 
-// In dev the FastAPI server is running independently of the Vite frontend.
-// All landmark recognition requests are sent to this server.
+// FastAPI runs separately from the Vite frontend during development.
+// All landmark recognition requests are sent to this address.
 const API_BASE_URL = 'http://127.0.0.1:8000';
 
 
 /*
 PRESET GLOBE DESTINATIONS
 
-There are currently 5 destinations on the globe.
+These are the five destinations currently on the globe.
 
-Each of these has the following properties:
+Each object has the following properties:
 
 - id: React internal id
-- name/country: displayed in UI
-- lat/lng: the real lat/lng to use for a map pin
+- name/country: rendered in UI
+- lat/lng: actual lat/lng for map pin
 - kicker: short promotional copy
-- confidence: fake confidence for landmark recognition (only in prototype)
-- hero / experienceImage / stayImage / eatImage: individual images for use in
-  the Trip Canvas (so that the Trip Canvas does not reuse an image)
-- hotel / restaurant / attraction: example of these three types of experiences
-- stayPrice / eatPrice / doPrice / flight: examples of the price for each type
-  of experience
+- confidence: fake confidence level for recognition (only for prototype)
+- hero / experienceImage / stayImage / eatImage: individual images so the
+  Trip Canvas doesn't reuse the same image
+- hotel / restaurant / attraction: sample travel options
+- stayPrice / eatPrice / doPrice / flight: sample prices
 
-Once the backend exists, the majority of this data will be provided by the API
-rather than hardcoded in this file.
+Once the backend exists, a large amount of this data will come from the API
+instead of being hardcoded here.
 
-Having this list of pre-defined destinations in one place makes the rest of the
-frontend much easier to use. Rather than hardcoding Orlando, Tokyo, Paris, etc.,
-in 5 different places, React can loop over this data and use it in multiple
-places. This is cleaner and should also make integration with the backend easier.
-We can replace the mock data with API data.
+Having all the preset destinations in one array makes the rest of
+the page a lot easier to work with. Rather than hard coding Orlando, Tokyo, Paris,
+etc. in five different places, React can loop over the same data and use it in multiple
+places. This is much cleaner and should make integration to the backend even less
+painful as we can replace mock data with API data.
 */
 const destinations = [
   {
@@ -153,20 +154,20 @@ const destinations = [
 /*
 ROTATING DESTINATION GALLERY
 
-This is the large horizontal image gallery found lower in the application.
+The large full width image carousel found lower on the page.
 
-There are 5 pre-defined destinations on the globe but some of the gallery images
-have a "trip" object associated with them. This allows the user to select
-"Plan this trip" on one of these images and use the same Trip Canvas that is
-used for the globe.
+There are five globe presets but some gallery items have their own custom
+"trip" object. This enables a user to click "Plan this trip" on a gallery item and use
+the same Trip Canvas as used in the globe.
 
-For Tokyo and the Amazon, we reuse an existing destination object using
+For Tokyo and the Amazon we reuse an existing destination object via
 destinations.find(...). No duplicate data is created.
 
-The gallery is set up similarly to the globe using data. Some items have their
-own trip object while others reuse an existing destination using .find().
-Again, reusing an object here prevents copying data across the page. If we were
-to copy/paste data across the page it would quickly get messy.
+The gallery is structured similarly to the globe using data.
+Some items have their own trip object, while others reuse an existing
+destination using .find(). Again, reusing an object here avoids copying
+duplicate data across the entire file. Things would quickly become messy
+if we copy/paste data everywhere.
 */
 const gallery = [
   {
@@ -236,16 +237,16 @@ const gallery = [
 /*
 BACKGROUND PARTICLES
 
-These are the small animated particles in the background.
+These are the small glowing particles in the background.
 
-Each of these has a random position, size, delay and duration. One randomization
-happens at initialization. useMemo is used here so that the particles do not
-jump to new random positions when the page re-renders because of React.
+The position, size, delay and duration of each particle is randomized once.
+useMemo is used here to avoid the particles jumping to new random
+positions every time the page is re-rendered by React.
 
-This is mostly visual and does go a long way towards providing a dynamic page
-instead of a completely static mock-up. The animation is kept lightweight since
-there is no real benefit to cooking the GPU for a small number of animated
-background particles.
+This is mostly visual polish, but it does go a long way towards making the
+page feel dynamic rather than entirely static in the mockup. We keep the
+effect fairly lightweight since there's no benefit in cooking the GPU
+for small background dots.
 */
 function ParticleField() {
   const particles = useMemo(() => Array.from({ length: 34 }, (_, i) => ({
@@ -259,73 +260,74 @@ function ParticleField() {
 /*
 LIGHTWEIGHT "GLOBE" COMPONENT
 
-The current implementation of the globe is optimized for performance.
+The current implementation of the globe is performance optimized.
 
-Rather than warping a high resolution map texture in JavaScript multiple times,
-we instead are shifting copies of a real world map texture inside of a circular
-view. The location pins are drawn inside of the same map texture. Because both
-the map and location pins are moving together, the pins will always be in the
-correct geographic location.
+Rather than warping a high-resolution texture repeatedly in JavaScript,
+we instead shift copies of a real world map texture within a circular
+container horizontally. The location dots are drawn INSIDE the same
+map texture. Since both the map and the location dots are moving together,
+the dots stay in their correct geographic positions.
 
-This allows for:
+This gives us:
 
-- A rotating globe that looks like earth
-- Correctly positioned continents
-- Pins that stay in the correct location on the map
-- Much lower latency than our previous canvas warping implementations.
+- A rotating earth-like globe
+- Accurate placement of continents
+- Markers that adhere to the map
+- Much lower latency compared to our canvas-warp implementations
 
 Props:
 
-- selected: currently selected location
-- onSelect: called on click of a location pin
+- selected: the currently selected location
+- onSelect: called when a marker is clicked
 
-The globe is somewhat complex, but the concept behind it is relatively simple.
-A map and all of the location pins can flow inside a circular view. This prevents
-any pin from drifting and allows for a rotating Earth while not requiring a much
-heavier 3D globe library.
+The globe appears a bit complex, but the actual concept is actually quite
+simple. A map with its markers all flow within a circular view. This eliminates
+the issue of marker drift and provides the appearance of a rotating Earth
+without the overhead of a much heavier full 3D globe library.
 */
 function CanvasGlobe({ selected, onSelect }) {
   
-  // Reference to the circular view that crops the map.
+  // Reference to the visible circular viewing "window" that crops the map.
   const viewportRef = useRef(null);
 
   
   
-  // Several copies of the entire world map are created so that the map can loop
-  // infinitely without whitespace at either end.
+  // We create several copies of the world map in order to be able to loop the map
+  // infinitely, without leaving whitespace on the left or right sides.
   const worldRefs = useRef([]);
 
   
   
-  // Current longitude/rotation value. Instead of using state, we use refs because
-  // this gets updated every animation frame and should not trigger a React re-render.
+  // Current longitude/rotation value. Instead of state, we use refs because this
+  // gets updated every animation frame and SHOULD NOT cause React re-renders.
   const rotationRef = useRef(-28);
 
   
   
-  // The longitude we smoothy rotate to after a destination is selected.
+  // The longitude we smoothly rotate toward if a destination is clicked.
   const targetRotationRef = useRef(null);
 
   
   
-  // Slows automatic rotation for a short time after a destination is selected.
-  // This gives the user time to check out the selected destination.
+  // Pauses automatic rotation for a short time when a destination is focused. This
+  // gives the user time to look at their focused destination.
   const pauseUntilRef = useRef(0);
 
   
-  // Stores requestAnimationFrame to be cancelled later on in the cleanup.
+  // Stores requestAnimationFrame to be cancelled later during cleanup.
   const rafRef = useRef(null);
 
   
   
-  // Used to calculate how long has passed since the last animation frame.
-  // This allows the animation to be smooth on 60 Hz, 120 Hz and 144 Hz displays.
+  // Used for calculating the time that has elapsed since the last frame. This
+  // enables smooth animation across 60 Hz, 120 Hz and 144 Hz displays.
   const lastTimeRef = useRef(performance.now());
 
   
   
-  // To select a destination cause the globe to rotate to the longitude of the new
-  // destination and pause the automatic rotation for 2.6 seconds.
+  // To select a new location, have the globe animate to rotate to the
+  // longitude of the new location, then stop the automatic rotation for
+  // 2.6 seconds.
   useEffect(() => {
     if (!selected) return;
     targetRotationRef.current = selected.lng;
@@ -335,8 +337,9 @@ function CanvasGlobe({ selected, onSelect }) {
   
   
   
-  // The animation loop used for the globe.
-  // Runs once on initialization of the globe and is removed when the component is removed.
+  // Animation loop for the globe.
+  // Runs once when the globe is mounted and removes itself when the
+  // component is removed.
   useEffect(() => {
     const viewport = viewportRef.current;
     if (!viewport) return;
@@ -358,14 +361,14 @@ function CanvasGlobe({ selected, onSelect }) {
         rotationRef.current = (rotationRef.current + dt * .0048) % 360;
       }
 
-      // 560 is a fallback in case the browser has not completed measuring the globe yet.
-      // This prevents the first animation frame from doing some odd calculations while
-      // the layout is still settling.
+      // 560 is a fallback value if the browser has not completed measuring
+      // the globe yet. This prevents the first animation frame from performing
+      // strange calculations while the layout is still settling.
       const viewportWidth = viewport.clientWidth || 560;
       const worldWidth = viewportWidth * 2;
 
       
-      // Center the current/selected longitude in the circular view.
+      // Center the currently/selected longitude in the circular view.
       const normalizedRotation =
         ((rotationRef.current + 180) % 360 + 360) % 360;
 
@@ -378,13 +381,14 @@ function CanvasGlobe({ selected, onSelect }) {
       
       
       
-      // The pins are inside the world maps.
-      // The world map and pins are translated together so that the labels remain in
-      // their correct geolocation.
+      // The markers are INSIDE each world.
+      // The world and markers are translated together as one object,
+      // meaning the labels will always be in the correct geographic
+      // location.
       //
-      // Each copy of the world map has the same value for translation. This is what
-      // makes the looping texture appear as one globe instead of three separate
-      // copies of the world moving independently.
+      // Each copy of a world receives the same translation value. This is what
+      // allows the repeating texture to appear as a single globe rather than
+      // three separate worlds moving independently.
       worldRefs.current.forEach((world) => {
         if (world) {
           world.style.transform = `translate3d(${translateX}px,0,0)`;
@@ -403,8 +407,8 @@ function CanvasGlobe({ selected, onSelect }) {
 
   
   
-  // A function that creates a copy of a world map along with all of the destination
-  // pins. Three copies are created to allow for infinite looping.
+  // A function that creates one instance of the world texture and all
+  // destination markers. Three instances are created for horizontal looping.
   const renderWorldCopy = (copyKey, leftPercent, refIndex) => (
     <div
       key={copyKey}
@@ -423,11 +427,14 @@ function CanvasGlobe({ selected, onSelect }) {
         
         
         
-        // Converts a pair of lat/lng to percentage values on an equirectangular world map.
+        // Takes latitude and longitude and converts them to percentages
+        // on an equirectangular world map.
         //
-        // Longitude: -180 degrees is far left and +180 degrees is far right.
+        // Longitude:
+        // -180 degrees = far left, +180 degrees = far right.
         //
-        // Latitude: +90 degrees is on top (North Pole) and -90 degrees is on bottom.
+        // Latitude:
+        // +90 degrees = top (North Pole), -90 degrees = bottom.
         const x = ((d.lng + 180) / 360) * 100;
         const y = ((90 - d.lat) / 180) * 100;
 
@@ -469,52 +476,52 @@ function CanvasGlobe({ selected, onSelect }) {
 /*
 MAIN TREKMARK APPLICATION
 
-App() creates the visible page components and assembles the components of the
-page. The majority of the page is currently a single page app. As a user
-progresses through the app, clicking on links will cause changes to React state
-rather than switching to a different HTML page.
+App() creates the main user visible elements and assembles all
+sections of the page. Most of the app is currently a single page
+application. As the user moves through the app, links cause changes
+in React state instead of transitioning to entirely new HTML pages.
 
-App() is essentially in charge of handling page state. It keeps track of the
-current selected destination, visibility of the detailed Trekmark Trip Canvas,
-the currently uploaded image (temporary URL), visibility of the fake AI image
-processing page and the currently displayed image in the rotating gallery.
+App() is essentially in charge of managing the page state. It tracks data such
+as which destination is selected, whether the Trip Canvas is visible, which
+gallery slide is currently displayed and whether the fake AI image scanning
+screen is currently visible.
 */
 function App() {
   
   
-  // Hidden input for image uploads. Used by several buttons in the app to allow a
-  // user to upload a file using the user's default file opener.
+  // Hidden input used for file input. Utilised by various buttons in the app to
+  // let the user select a file using the user's default file picker.
   const fileRef = useRef();
 
   
-  // Currently selected destination. If this is null then no destination is selected.
+  // Currently selected destination. If null then no destination has been selected.
   const [selected, setSelected] = useState(null);
 
   
-  // Boolean to show or hide detailed Trekmark Trip Canvas
+  // Boolean used to show or hide the detailed Trekmark Trip Canvas
   const [detailOpen, setDetailOpen] = useState(false);
 
   
-  // Temporary URL for the currently uploaded image
+  // Temporary URL for the uploaded image stored locally
   const [uploadPreview, setUploadPreview] = useState(null);
 
   
-  // Boolean to show or hide the fake AI image processing page
+  // Boolean used to show or hide the fake AI image scanning screen
   const [analyzing, setAnalyzing] = useState(false);
 
   
-  // Currently displayed image in the rotating gallery
+  // Current image in large rotating image display
   const [galleryIndex, setGalleryIndex] = useState(0);
 
-  // Tracks form used by user to submit a landmark.
+  // Tracks the user-facing landmark submission form.
   const [submissionStatus, setSubmissionStatus] = useState('');
   const [submissionImageUrl, setSubmissionImageUrl] = useState('');
 
   
   
   
-  // Advances cinematic destination gallery every 5.2 seconds.
-  // Will cancel interval on component cleanup.
+  // Advances cinematic destination gallery every 5.2 sec.
+  // Will cancel interval when component is destroyed via cleanup function.
   useEffect(() => {
     const t = setInterval(
       () => setGalleryIndex(i => (i + 1) % gallery.length),
@@ -526,12 +533,13 @@ function App() {
   
   
   
-  // Called when clicking on a location on the globe. Selects the destination,
-  // hides any existing planner and scrolls down to the destination preview card.
+  // Called when one of the globe markers are clicked. Selects the
+  // destination, closes any existing planner and scrolls down to the
+  // destination preview card.
   //
-  // We use a timeout to give React time to render the new destination preview
-  // card before we scroll to it. We sometimes scroll too early and end up in an
-  // awkward position. This is lowkey annoying.
+  // We use the short timeout to give React time to render the new
+  // destination card before we scroll to it. Otherwise, we can sometimes
+  // scroll too early and end up in an awkward position. This is lowkey annoying.
   const focusDestination = (d) => {
     setSelected(d);
     setDetailOpen(false);
@@ -546,8 +554,8 @@ function App() {
 
   
   
-  // Deselects the currently selected destination, hides the destination preview
-  // card and returns the user to exploring the globe.
+  // Unselects the selected destination, hides the destination preview
+  // card and returns the user to the state of discovering the globe.
   const clearDestination = () => {
     setSelected(null);
     setDetailOpen(false);
@@ -561,8 +569,8 @@ function App() {
 
   
   
-  // Opens the Trip Canvas for the currently displayed destination in the cinematic
-  // destination gallery. This gives the gallery a use and is not completely decorative.
+  // Opens the Trip Canvas for the image in the currently viewed cinematic
+  // gallery. Now the gallery serves a purpose and is not purely decorative.
   const planGalleryTrip = () => {
     const trip = gallery[galleryIndex]?.trip;
     if (!trip) return;
@@ -580,12 +588,12 @@ function App() {
   
   
   // Add the four prototype images to the Trip Canvas.
-  // Individual image inputs are used rather than repeating an image because it
-  // would be uninteresting to a travel planner.
+  // Use individual image inputs rather than repeating the same
+  // image since it would be uninteresting to a travel planner.
   //
-  // By creating this array upfront the JSX becomes much cleaner. Rather than having
-  // to create four almost identical image components manually, we define the data
-  // once and then use .map() to repeat the components.
+  // Creating this array up front results in a lot cleaner JSX below. Rather than
+  // manually creating four nearly-identical image components, we define the data
+  // once and have .map() handle the repetition for us.
   const plannerVisuals = selected ? [
     {
       kind: 'Destination view',
@@ -821,7 +829,7 @@ function App() {
           <a className="brand" href="#top"><span className="brand-mark"><Compass size={16}/></span>Trekmark</a>
           <div className="nav-links">
             <a href="#how">How it works</a>
-            <button className="nav-login">Log in</button>
+            <button className="nav-login" onClick={() => { window.location.href = '/admin'; }}>Admin</button>
             <button className="upload-mini" onClick={() => fileRef.current?.click()}><Camera size={15}/> Upload photo</button>
           </div>
         </div>
@@ -1596,8 +1604,16 @@ function App() {
 }
 
 
+
+
+
+function RootApp() {
+  return window.location.pathname.startsWith('/admin') ? <AdminPage /> : <App />;
+}
+
+
 // Take the <div id="root"></div> from index.html and put the entire
 // Trekmark React app into it. From this point on React will handle the page.
 // index.html only provides an empty root element. The App() is what will
 // actually display Trekmark in the browser.
-createRoot(document.getElementById('root')).render(<App />);
+createRoot(document.getElementById('root')).render(<RootApp />);
