@@ -400,6 +400,20 @@ async def predict_landmark(
                 "distance_km": float(nearby["distance_km"]),
             })
 
+    # GEOAPIFY PLACES API INSERT:
+    import requests
+    from requests.structures import CaseInsensitiveDict
+
+    url = "https://api.geoapify.com/v2/places?categories=catering.restaurant&filter=rect%3A10.716463143326969%2C48.755151258420966%2C10.835314015356737%2C48.680903341613316&limit=5&apiKey=b56eee54baa048b88cd489909b23c796"
+
+    headers = CaseInsensitiveDict()
+    headers["Accept"] = "application/json"
+
+    resp = requests.get(url, headers=headers)
+
+    print(resp.status_code)
+    
+
     # PREDICTION RESPONSE
     #
     # The response to the /api/predict endpoint is a single JSON object that
