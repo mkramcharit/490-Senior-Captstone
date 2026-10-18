@@ -46,6 +46,7 @@ class LandmarkPipeline:
             from .calibration import probability
             result["confidence_probability"] = probability(self.calibrator, result["match_score"])
             result["confidence_calibrated"] = True
+        result["confidence"] = result["confidence_probability"] if result["confidence_calibrated"] else result["match_score"]
         return result
 
     def save(self, directory):
