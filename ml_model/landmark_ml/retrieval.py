@@ -32,6 +32,7 @@ class ReferenceIndex:
         self.index = faiss.IndexFlatIP(dimension)
         self.signature = signature
         self.references: list[Reference] = []
+        self._paths = set()
 
     def add(self, vectors, references: list[Reference]):
         vectors = normalize(vectors, self.index.d)
@@ -39,11 +40,12 @@ class ReferenceIndex:
             raise ValueError("Every embedding must have one reference")
         if not all(isinstance(ref, Reference) for ref in references):
             raise ValueError("References must be Reference objects")
-        paths = [ref.image_path for ref in self.references + references]
-        if len(set(paths)) != len(paths):
+        paths = [ref.image_path for ref in references]
+        if len(set(paths)) != len(paths) or self._paths.intersection(paths):
             raise ValueError("Duplicate reference image paths")
         self.index.add(vectors)
         self.references.extend(references)
+        self._paths.update(paths)
 
     def predict(self, vector, top_k: int = 5) -> dict:
         if type(top_k) is not int or top_k < 1:
@@ -66,13 +68,13 @@ class ReferenceIndex:
         ))
         similarity = max(groups[winner])
         agreement = len(groups[winner]) / len(matches)
-        confidence = max(0.0, similarity) * agreement
-        return {"landmark_id": winner, "confidence": confidence,
+        match_score = max(0.0, similarity) * agreement
+        return {"landmark_id": winner, "match_score": match_score,
+                "confidence_probability": None, "confidence_calibrated": False,
                 "similarity": similarity, "agreement": agreement,
                 "top_matches": matches}
 
     def save(self, directory: str | Path):
-        """Create a new artifact directory, don't overwrite an existing index"""
         if not self.references:
             raise ValueError("Cannot save an empty index")
         directory = Path(directory)
@@ -84,7 +86,6 @@ class ReferenceIndex:
 
     @classmethod
     def load(cls, directory: str | Path, expected_signature: str):
-        """Load only FAISS artifacts"""
         directory = Path(directory)
         payload = json.loads((directory / "references.json").read_text(encoding="utf-8"))
         if payload["version"] != 1 or payload["signature"] != expected_signature:
@@ -95,7 +96,7 @@ class ReferenceIndex:
         result = cls(index.d, expected_signature)
         result.index = index
         result.references = [Reference(**ref) for ref in payload["references"]]
+        result._paths = {ref.image_path for ref in result.references}
         if index.ntotal != len(result.references) or not result.references:
             raise ValueError("Index and reference mapping counts do not match or are empty")
         return result
-    

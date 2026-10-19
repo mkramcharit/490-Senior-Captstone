@@ -18,13 +18,13 @@ def test_cosine_search():
     assert result["landmark_id"] == 417
     assert result["similarity"] == pytest.approx(1)
     assert len(result["top_matches"]) == 2
-    assert result["confidence"] == pytest.approx(0.5)
+    assert result["match_score"] == pytest.approx(0.5)
 
 def test_match_agreement():
     agreeing = make_index([0.94, 0.92, 0.90], [417, 417, 417]).predict([1, 0])
     mixed = make_index([0.94, 0.92, 0.90], [417, 883, 417]).predict([1, 0])
-    assert agreeing["confidence"] == pytest.approx(0.94)
-    assert mixed["confidence"] < agreeing["confidence"]
+    assert agreeing["match_score"] == pytest.approx(0.94)
+    assert mixed["match_score"] < agreeing["match_score"]
     assert mixed["landmark_id"] == 417
 
 def test_landmark_voting():
@@ -34,9 +34,9 @@ def test_landmark_voting():
 
 def test_weak_matches():
     result = make_index([0.05, 0.04, 0.03], [417] * 3).predict([1, 0])
-    assert result["confidence"] == pytest.approx(0.05)
+    assert result["match_score"] == pytest.approx(0.05)
     result = make_index([-0.1, -0.2], [417, 417]).predict([1, 0])
-    assert result["confidence"] == 0
+    assert result["match_score"] == 0
 
 def test_index_storage(tmp_path):
     index = make_index([0.94, 0.92, 0.7], [417, 417, "louvre"])
@@ -44,7 +44,7 @@ def test_index_storage(tmp_path):
     index.save(target)
     restored = ReferenceIndex.load(target, "test-model")
     assert restored.predict([1, 0]) == index.predict([1, 0])
-    with pytest.raises(ValueError, match="differs"):
+    with pytest.raises(ValueError, match="does not match"):
         ReferenceIndex.load(target, "other-model")
     with pytest.raises(FileExistsError):
         index.save(target)
@@ -65,6 +65,7 @@ def test_invalid_inputs():
     index = ReferenceIndex(2, "test")
     with pytest.raises(ValueError, match="empty"):
         index.predict([1, 0])
+    index.add([[1,0]], [Reference(417, "a")])
     with pytest.raises(ValueError):
         index.add([[1,0]], [Reference(417, "a")])
     assert index.index.ntotal == 1

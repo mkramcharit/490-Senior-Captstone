@@ -10,7 +10,7 @@ def main():
     build = commands.add_parser("build", help="Embed images from a JSON manifest")
     build.add_argument("manifest", type=Path)
     build.add_argument("output", type=Path)
-    build.add_argument("--batch--size", type=int, default=16)
+    build.add_argument("--batch-size", type=int, default=16)
     predict = commands.add_parser("predict", help="Predict a local image")
     predict.add_argument("index", type=Path)
     predict.add_argument("image", type=Path)
@@ -32,5 +32,5 @@ def main():
     else:
         pipeline = LandmarkPipeline.load(args.index, args.model, args.device)
         print(json.dumps(pipeline.predict(args.image, args.top_k), indent=2))
-    if __name__ == "__main__":
-        main()
+if __name__ == "__main__":
+    main()

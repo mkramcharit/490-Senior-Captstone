@@ -9,7 +9,6 @@ ImageInput = str | Path | bytes | BinaryIO | Image.Image
 
 
 def read_image(source: ImageInput) -> Image.Image:
-    """Accept a local image, uploaded bytes/files, or a PIL image."""
     if isinstance(source, Image.Image):
         return ImageOps.exif_transpose(source).convert("RGB")
     if isinstance(source, bytes):
