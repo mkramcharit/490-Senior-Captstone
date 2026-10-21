@@ -404,7 +404,7 @@ async def predict_landmark(
     import requests
     from requests.structures import CaseInsensitiveDict
 
-    url = "https://api.geoapify.com/v2/places?categories=catering.restaurant&filter=rect%3A10.716463143326969%2C48.755151258420966%2C10.835314015356737%2C48.680903341613316&limit=5&apiKey=b56eee54baa048b88cd489909b23c796"
+    url = "https://api.geoapify.com/v2/places?categories=catering.restaurant&bias=proximity:7.744380838810624,48.5873243&limit=5&apiKey=b56eee54baa048b88cd489909b23c796"
 
     headers = CaseInsensitiveDict()
     headers["Accept"] = "application/json"
