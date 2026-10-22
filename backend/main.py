@@ -402,16 +402,29 @@ async def predict_landmark(
 
     # GEOAPIFY PLACES API INSERT:
     import requests
-    from requests.structures import CaseInsensitiveDict
+    url = "https://api.geoapify.com/v2/places"
 
-    url = "https://api.geoapify.com/v2/places?categories=catering.restaurant&bias=proximity:7.744380838810624,48.5873243&limit=5&apiKey=b56eee54baa048b88cd489909b23c796"
+    params = {
+        "categories": "catering.restaurant",
+        "bias": f"proximity:{landmark['lon']},{landmark['lat']}",
+        "limit": 5,
+        "apiKey": 'b56eee54baa048b88cd489909b23c796'
+    }
 
-    headers = CaseInsensitiveDict()
-    headers["Accept"] = "application/json"
+    headers = {
+        "Accept": "application/json"
+    }
 
-    resp = requests.get(url, headers=headers)
+    resp = requests.get(url, params=params, headers=headers, timeout=10)
+    resp.raise_for_status()
 
-    print(resp.status_code)
+    data = resp.json()
+
+    # Store the returned restaurants in an array
+    restaurants = [
+        feature.get("properties", {})
+        for feature in data.get("features", [])
+    ]
     
 
     # PREDICTION RESPONSE
@@ -457,7 +470,7 @@ async def predict_landmark(
         "trip_suggestions": {
             "flights": [],
             "hotels": [],
-            "restaurants": [],
+            "restaurants": restaurants,
             "best_time_to_visit": None,
         },
     }
