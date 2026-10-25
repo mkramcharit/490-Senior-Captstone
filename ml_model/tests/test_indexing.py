@@ -66,9 +66,12 @@ def test_compatibility_confidence_and_tuple_adapter(monkeypatch):
     index.add([[1, 0]], [Reference(25719, 'neon:1')])
     pipeline = LandmarkPipeline(embedder(), index)
     result = pipeline.predict(b'a')
-    assert result['confidence'] == result['match_score'] == 1
+    assert result['confidence'] is None
+    assert result['match_score'] == 1
+    assert result['index_info']['reference_count'] == 1
+    assert result['index_info']['landmark_count'] == 1
     monkeypatch.setattr('landmark_ml.recognition._pipeline', lambda *args: pipeline)
-    assert recognize_image(b'a') == (25719, 1.0)
+    assert recognize_image(b'a') == (25719, None)
     pipeline.calibrator = {'top_k': 5, 'mean': 0, 'scale': 1, 'weights': [0, 0]}
     assert recognize_image(b'a') == (25719, .5)
     assert pipeline.predict(b'a')['confidence_calibrated']
@@ -108,3 +111,25 @@ def test_interrupted_build_resumes_without_reindexing_committed_rows(tmp_path, m
     assert seen == ['0', '1', '2']
     assert report['processed_rows'] == report['indexed_images'] == 3
     assert [r.landmark_id for r in ReferenceIndex.load(output, 'test').references] == [100, 101, 102]
+
+
+def test_network_failure_preserves_underlying_reason():
+    from urllib.error import URLError
+    def download(url):
+        raise URLError('certificate verify failed')
+    rows = [{'id': '1', 'url': 'https://example.com/a.jpg', 'landmark_id': 1}]
+    index, failures = process_rows(rows, embedder(), 1, 1, download)
+    assert not index.references
+    assert failures[0]['error']['reason'] == 'certificate verify failed'
+
+
+def test_empty_shards_report_failure_without_writing_index(tmp_path):
+    from landmark_ml.indexing import NoImagesIndexedError
+    work = tmp_path / 'work'
+    (work / 'batch-000000000').mkdir(parents=True)
+    (work / 'batch-000000000' / 'failures.json').write_text('[]')
+    output = tmp_path / 'final'
+    with pytest.raises(NoImagesIndexedError, match='No images were indexed'):
+        merge_shards(work, embedder(), output)
+    assert not output.exists()
+    assert (work / 'batch-000000000' / 'failures.json').exists()

@@ -71,3 +71,27 @@ def test_uncalibrated_prediction_has_no_probability():
     assert "confidence" not in result
     assert result["confidence_probability"] is None
     assert not result["confidence_calibrated"]
+
+def test_uncalibrated_pipeline_does_not_report_similarity_as_confidence():
+    index = ReferenceIndex(2, 'test')
+    index.add([[1, 0]], [Reference(1, 'neon:1')])
+    embedder = SimpleNamespace(signature='test', dimension=2, embed=lambda images: np.array([[1, 0]]))
+    result = LandmarkPipeline(embedder, index).predict(b'image')
+    assert result['match_score'] == 1
+    assert result['confidence'] is None
+    assert result['confidence_probability'] is None
+    assert not result['confidence_calibrated']
+    assert result['prediction_status'] == 'candidate'
+    assert result['index_info']['landmark_count'] == 1
+
+
+def test_confidence_is_withheld_outside_calibration_score_range():
+    index = ReferenceIndex(2, 'test')
+    index.add([[1, 0]], [Reference(1, 'neon:1')])
+    embedder = SimpleNamespace(signature='test', dimension=2, embed=lambda images: np.array([[1, 0]]))
+    pipeline = LandmarkPipeline(embedder, index)
+    pipeline.calibrator = {'top_k': 5, 'mean': 0, 'scale': 1, 'weights': [0, 5], 'score_range': [.1, .8]}
+    result = pipeline.predict(b'image')
+    assert result['confidence'] is None
+    assert not result['confidence_calibrated']
+    assert 'outside' in result['confidence_description']

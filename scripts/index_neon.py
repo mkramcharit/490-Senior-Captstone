@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 
 from dotenv import load_dotenv
-from landmark_ml.indexing import build_from_neon
+from landmark_ml.indexing import NoImagesIndexedError, build_from_neon
 
 
 def main():
@@ -19,9 +19,13 @@ def main():
     parser.add_argument('--resume', action='store_true')
     args = parser.parse_args()
     load_dotenv(Path(__file__).resolve().parents[1] / '.env')
-    print(json.dumps(build_from_neon(args.output, model_path=args.model, device=args.device,
-        fetch_size=args.fetch_size, batch_size=args.batch_size, workers=args.workers,
-        limit=args.limit, landmark_ids=args.landmark_ids, resume=args.resume), indent=2))
+    try:
+        report = build_from_neon(args.output, model_path=args.model, device=args.device,
+            fetch_size=args.fetch_size, batch_size=args.batch_size, workers=args.workers,
+            limit=args.limit, landmark_ids=args.landmark_ids, resume=args.resume)
+    except NoImagesIndexedError as error:
+        parser.exit(1, str(error) + '\n')
+    print(json.dumps(report, indent=2))
 
 
 if __name__ == '__main__':

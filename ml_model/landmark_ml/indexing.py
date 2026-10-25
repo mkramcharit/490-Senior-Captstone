@@ -17,12 +17,19 @@ from .embeddings import DinoV2Embedder
 from .retrieval import Reference, ReferenceIndex
 
 
+class NoImagesIndexedError(RuntimeError):
+    pass
+
+
 def export_index(index, output):
     output = Path(output)
     if not all(type(ref.landmark_id) is int for ref in index.references):
         raise ValueError('Neon landmark IDs must be integers')
     index.save(output)
-    shutil.copyfile(output / 'images.faiss', output / 'landmarks.index')
+    try:
+        os.link(output / 'images.faiss', output / 'landmarks.index')
+    except OSError:
+        shutil.copyfile(output / 'images.faiss', output / 'landmarks.index')
     with (output / 'landmark_ids.pkl').open('wb') as stream:
         pickle.dump([ref.landmark_id for ref in index.references], stream, protocol=4)
 
@@ -79,7 +86,13 @@ def process_rows(rows, embedder, batch_size, workers, downloader=download_image)
         try:
             return row, downloader(row['url']), None
         except Exception as error:
-            return row, None, {'type': type(error).__name__, 'status': getattr(error, 'code', None)}
+            detail = {'type': type(error).__name__, 'status': getattr(error, 'code', None)}
+            reason = getattr(error, 'reason', None)
+            if reason is not None:
+                detail['reason'] = str(reason)[:500]
+            elif isinstance(error, ValueError):
+                detail['reason'] = str(error)[:500]
+            return row, None, detail
 
     with ThreadPoolExecutor(max_workers=workers) as pool:
         for start in range(0, len(rows), batch_size):
@@ -113,6 +126,12 @@ def merge_shards(work, embedder, output):
             continue
         shard = ReferenceIndex.load(checkpoint, embedder.signature)
         result.add(shard.index.reconstruct_n(0, shard.index.ntotal), shard.references)
+    if not result.references:
+        raise NoImagesIndexedError(
+            f'No images were indexed. Inspect failures.json in {Path(work).resolve()} / batch-* '
+            'for download or embedding errors. Checkpoints were preserved; no final index was written. '
+            'After fixing the cause, use a new output directory to retry failed rows.'
+        )
     export_index(result, output)
     return result
 

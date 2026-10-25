@@ -18,7 +18,7 @@ def read_image(source: ImageInput) -> Image.Image:
 
 
 class DinoV2Embedder:
-    def __init__(self, model_path: str | Path = "dinov2-small", device: str = "cpu"):
+    def __init__(self, model_path: str | Path = "dinov2-small", device: str = "cpu", mixed_precision: bool = False, preprocess_workers: int = 0):
         import torch
         from transformers import AutoImageProcessor, AutoModel
 
@@ -36,6 +36,8 @@ class DinoV2Embedder:
         if self.model.config.model_type != "dinov2":
             raise ValueError("Expected a DINOv2 model")
         self.device = device
+        self.mixed_precision = mixed_precision and str(device).startswith("cuda")
+        self.preprocess_workers = preprocess_workers
         self.dimension = self.model.config.hidden_size
 
         import hashlib
@@ -53,13 +55,23 @@ class DinoV2Embedder:
 
         if not images:
             raise ValueError("At least one image is required")
-        prepared = [read_image(source) for source in images]
-        try:
-            inputs = self.processor(images=prepared, return_tensors="pt").to(self.device)
-            with torch.inference_mode():
-                vectors = self.model(**inputs).last_hidden_state[:, 0, :]
-                vectors = torch.nn.functional.normalize(vectors, p=2, dim=1)
-            return np.ascontiguousarray(vectors.cpu().numpy(), dtype=np.float32)
-        finally:
-            for image in prepared:
-                image.close()
+        if self.preprocess_workers > 1:
+            from concurrent.futures import ThreadPoolExecutor
+            def prepare(source):
+                with read_image(source) as image:
+                    return self.processor(images=[image], return_tensors="pt")["pixel_values"][0]
+            with ThreadPoolExecutor(max_workers=self.preprocess_workers) as pool:
+                pixels = list(pool.map(prepare, images))
+            inputs = {"pixel_values": torch.stack(pixels).to(self.device)}
+        else:
+            prepared = []
+            try:
+                prepared = [read_image(source) for source in images]
+                inputs = self.processor(images=prepared, return_tensors="pt").to(self.device)
+            finally:
+                for image in prepared:
+                    image.close()
+        with torch.inference_mode(), torch.autocast(device_type="cuda", dtype=torch.float16, enabled=self.mixed_precision):
+            vectors = self.model(**inputs).last_hidden_state[:, 0, :]
+            vectors = torch.nn.functional.normalize(vectors, p=2, dim=1)
+        return np.ascontiguousarray(vectors.float().cpu().numpy(), dtype=np.float32)

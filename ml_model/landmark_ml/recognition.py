@@ -19,4 +19,6 @@ def recognize_image(image, index_path=None, model_path=None, device='cpu', top_k
     if not model.is_absolute():
         model = root / model
     result = _pipeline(str(directory.resolve()), str(model.resolve()), device).predict(image, top_k)
-    return int(result['landmark_id']), float(result['confidence'])
+    probability = result['confidence_probability']
+    landmark_id = result['landmark_id']
+    return int(landmark_id) if landmark_id is not None else None, float(probability) if probability is not None else None

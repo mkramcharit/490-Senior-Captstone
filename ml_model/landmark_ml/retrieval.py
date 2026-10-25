@@ -91,8 +91,8 @@ class ReferenceIndex:
         if payload["version"] != 1 or payload["signature"] != expected_signature:
             raise ValueError("Index model does not match preprocessing")
         index = faiss.read_index(str(directory / "images.faiss"))
-        if not isinstance(index, faiss.IndexFlatIP):
-            raise ValueError("Expected a flat inner product index")
+        if not isinstance(index, (faiss.IndexFlatIP, faiss.IndexPQ, faiss.IndexScalarQuantizer)) or index.metric_type != faiss.METRIC_INNER_PRODUCT:
+            raise ValueError("Expected a supported inner product index")
         result = cls(index.d, expected_signature)
         result.index = index
         result.references = [Reference(**ref) for ref in payload["references"]]
