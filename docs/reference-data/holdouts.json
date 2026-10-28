@@ -1,0 +1,47 @@
+[
+  {
+    "id": "03ceacaafe6c7c1a",
+    "landmark_id": 104169,
+    "name": "Stirling Castle",
+    "source_url": "https://upload.wikimedia.org/wikipedia/commons/f/fe/Stirling_Castle_2018-08-31_by_Marcok_f06.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fe/Stirling_Castle_2018-08-31_by_Marcok_f06.jpg/960px-Stirling_Castle_2018-08-31_by_Marcok_f06.jpg",
+    "sha256": "7ab281d7c90222acfeb04397d2be7e59fc6902dca3fcaf8fd86ed24de9e70502",
+    "image_path": "images/80273675a4c7ad9c2dd7.jpg"
+  },
+  {
+    "id": "083636a2fbdb6563",
+    "landmark_id": 104169,
+    "name": "Stirling Castle",
+    "source_url": "https://upload.wikimedia.org/wikipedia/commons/8/83/The_Stirling_Castle.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/The_Stirling_Castle.jpg/960px-The_Stirling_Castle.jpg",
+    "sha256": "4290b7681566467b15184d1aaa0108e5b8e99d30fdc80c46471359f7036a1d92",
+    "image_path": "images/ff46538e634c06a8002c.jpg"
+  },
+  {
+    "id": "d8b4c69c797c357d",
+    "landmark_id": 25719,
+    "name": "Monza Cathedral",
+    "source_url": "https://upload.wikimedia.org/wikipedia/commons/9/96/Duomo_di_monza%2C_retro%2C_scavi_0.JPG",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/Duomo_di_monza%2C_retro%2C_scavi_0.JPG/960px-Duomo_di_monza%2C_retro%2C_scavi_0.JPG",
+    "sha256": "c588011bfca7ce3b9ab1c0a917dabd36ef520aac76a9b25baf8f46e80d32c0d6",
+    "image_path": "images/89f1bf6aac5720eea044.jpg"
+  },
+  {
+    "id": "20553cd318803b51",
+    "landmark_id": 73107,
+    "name": "George Washington's Mount Vernon",
+    "source_url": "https://upload.wikimedia.org/wikipedia/commons/2/2e/Martha_Washington_impersonator_meets_Chris_Lu%2C_Mount_Vernon%2C_2016_%281%29.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/Martha_Washington_impersonator_meets_Chris_Lu%2C_Mount_Vernon%2C_2016_%281%29.jpg/960px-Martha_Washington_impersonator_meets_Chris_Lu%2C_Mount_Vernon%2C_2016_%281%29.jpg",
+    "sha256": "ec08f528d726d773e0e5d2475046b55392a6a62eaa5f77936c90b24d618dafac",
+    "image_path": "images/6e94e51befb8944fabad.jpg"
+  },
+  {
+    "id": "2f0375d4a7743083",
+    "landmark_id": 73107,
+    "name": "George Washington's Mount Vernon",
+    "source_url": "https://upload.wikimedia.org/wikipedia/commons/5/54/Mysterious_Turds_-_Flickr_-_treegrow.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/54/Mysterious_Turds_-_Flickr_-_treegrow.jpg/960px-Mysterious_Turds_-_Flickr_-_treegrow.jpg",
+    "sha256": "30e26210e982f6ed428c74035582784ef929852e6cc92c1cc480c807653ce13a",
+    "image_path": "images/4239bde8a69394c48a59.jpg"
+  }
+]

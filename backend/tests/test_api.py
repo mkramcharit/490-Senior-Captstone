@@ -1,0 +1,76 @@
+from io import BytesIO
+from types import SimpleNamespace
+import pytest
+from fastapi.testclient import TestClient
+from PIL import Image
+import psycopg
+from backend import app as api
+
+@pytest.fixture
+def client():
+    return TestClient(api.app)
+
+@pytest.fixture
+def photo():
+    output = BytesIO()
+    Image.new("RGB", (16, 16), "red").save(output, format="PNG")
+    return output.getvalue()
+
+def test_upload_predicts_then_looks_up_same_id(client, photo, monkeypatch):
+    seen = []
+    def predict(data):
+        assert data == photo
+        seen.append("predict")
+        return {"landmark_id": "42", "match_score": .87}
+    def lookup(key):
+        seen.append(key)
+        return {"landmark_id": key, "name": "Test landmark", "lat": 0}
+    monkeypatch.setattr(api, "get_pipeline", lambda: SimpleNamespace(predict=predict))
+    monkeypatch.setattr(api, "lookup_landmark", lookup)
+    response = client.post("/api/predict", files={"image": ("image.png", photo, "image/png")})
+    assert response.status_code == 200
+    assert response.json()["match_score"] == .87
+    assert "confidence" not in response.json()
+    assert "confidence_description" not in response.json()
+    assert response.json()["confidence_probability"] is None
+    assert response.json()["confidence_calibrated"] is False
+    assert response.json()["landmark"]["name"] == "Test landmark"
+    assert seen == ["predict", 42]
+
+
+@pytest.mark.parametrize("probability,status", [(.72, 200), (float("nan"), 503), (1.2, 503)])
+def test_calibrated_probability(client, photo, monkeypatch, probability, status):
+    monkeypatch.setattr(api, "get_pipeline", lambda: SimpleNamespace(predict=lambda _: {
+        "landmark_id": 42, "match_score": .2, "confidence_probability": probability}))
+    monkeypatch.setattr(api, "lookup_landmark", lambda key: {"landmark_id": key})
+    response = client.post("/api/predict", files={"image": ("x.png", photo)})
+    assert response.status_code == status
+    if status == 200:
+        assert response.json()["confidence_probability"] == .72
+        assert response.json()["match_score"] == .2
+
+def test_invalid_image(client):
+    assert client.post("/api/predict", files={"image": ("x.png", b"bad")}).status_code == 422
+
+def test_large_upload(client, photo, monkeypatch):
+    monkeypatch.setattr(api, "MAX_UPLOAD_BYTES", 1)
+    assert client.post("/api/predict", files={"image": ("x.png", photo)}).status_code == 413
+
+def test_missing_index(client, photo, monkeypatch, tmp_path):
+    api.get_pipeline.cache_clear()
+    monkeypatch.setenv("LANDMARK_INDEX_PATH", str(tmp_path))
+    response = client.post("/api/predict", files={"image": ("x.png", photo)})
+    assert response.status_code == 503
+    assert "Recognition data unavailable" in response.json()["detail"]
+
+@pytest.mark.parametrize("failure,expected", [(None, 404), ("database", 503)])
+def test_lookup_errors(client, photo, monkeypatch, failure, expected):
+    monkeypatch.setattr(api, "get_pipeline", lambda: SimpleNamespace(predict=lambda _: {"landmark_id": 42, "match_score": .8}))
+    def lookup(_):
+        if failure:
+            raise psycopg.OperationalError("private connection details")
+        return None
+    monkeypatch.setattr(api, "lookup_landmark", lookup)
+    response = client.post("/api/predict", files={"image": ("x.png", photo)})
+    assert response.status_code == expected
+    assert "private" not in response.text

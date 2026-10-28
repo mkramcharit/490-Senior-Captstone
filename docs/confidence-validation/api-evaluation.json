@@ -1,0 +1,1572 @@
+{
+  "evaluation": "held-out images through real FastAPI endpoint and Neon lookup",
+  "correct": 23,
+  "total": 60,
+  "results": [
+    {
+      "image_path": "images/44ae6218e7dd989a1af2.jpg",
+      "expected_landmark_id": 25719,
+      "status": 200,
+      "correct": true,
+      "response": {
+        "landmark_id": 25719,
+        "confidence": 0.2648502945899963,
+        "match_score": 0.2648502945899963,
+        "confidence_probability": 0.8175303175364728,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 25719,
+          "name": "Monza Cathedral",
+          "category_name": "Category:Duomo_(Monza)",
+          "lat": 45.58359,
+          "lon": 9.27567,
+          "city": "Monza",
+          "state": "Lombardy",
+          "country": "Italy"
+        }
+      }
+    },
+    {
+      "image_path": "images/fe58d4db19e3cf226baa.jpg",
+      "expected_landmark_id": 25719,
+      "status": 200,
+      "correct": true,
+      "response": {
+        "landmark_id": 25719,
+        "confidence": 0.29801692962646487,
+        "match_score": 0.29801692962646487,
+        "confidence_probability": 0.8845553118564162,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 25719,
+          "name": "Monza Cathedral",
+          "category_name": "Category:Duomo_(Monza)",
+          "lat": 45.58359,
+          "lon": 9.27567,
+          "city": "Monza",
+          "state": "Lombardy",
+          "country": "Italy"
+        }
+      }
+    },
+    {
+      "image_path": "images/68cfc2320b7fd5dc7d82.jpg",
+      "expected_landmark_id": 73107,
+      "status": 200,
+      "correct": true,
+      "response": {
+        "landmark_id": 73107,
+        "confidence": 0.06272910833358765,
+        "match_score": 0.06272910833358765,
+        "confidence_probability": 0.1455009288581905,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 73107,
+          "name": "George Washington's Mount Vernon",
+          "category_name": "Category:Mount_Vernon",
+          "lat": 38.70777778,
+          "lon": -77.08611111,
+          "city": "Mount Vernon",
+          "state": "Virginia",
+          "country": "United States"
+        }
+      }
+    },
+    {
+      "image_path": "images/90f7b972abca546a8564.jpg",
+      "expected_landmark_id": 73107,
+      "status": 200,
+      "correct": true,
+      "response": {
+        "landmark_id": 73107,
+        "confidence": 0.04628572762012482,
+        "match_score": 0.04628572762012482,
+        "confidence_probability": 0.11543751691911812,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 73107,
+          "name": "George Washington's Mount Vernon",
+          "category_name": "Category:Mount_Vernon",
+          "lat": 38.70777778,
+          "lon": -77.08611111,
+          "city": "Mount Vernon",
+          "state": "Virginia",
+          "country": "United States"
+        }
+      }
+    },
+    {
+      "image_path": "images/5149b7bdce9bff975a14.jpg",
+      "expected_landmark_id": 73107,
+      "status": 200,
+      "correct": true,
+      "response": {
+        "landmark_id": 73107,
+        "confidence": 0.0932087779045105,
+        "match_score": 0.0932087779045105,
+        "confidence_probability": 0.21802471577878213,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 73107,
+          "name": "George Washington's Mount Vernon",
+          "category_name": "Category:Mount_Vernon",
+          "lat": 38.70777778,
+          "lon": -77.08611111,
+          "city": "Mount Vernon",
+          "state": "Virginia",
+          "country": "United States"
+        }
+      }
+    },
+    {
+      "image_path": "images/64959b69c65b72dbb8a1.jpg",
+      "expected_landmark_id": 73107,
+      "status": 200,
+      "correct": false,
+      "response": {
+        "landmark_id": 25719,
+        "confidence": 0.05702682733535767,
+        "match_score": 0.05702682733535767,
+        "confidence_probability": 0.13440170291646986,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 25719,
+          "name": "Monza Cathedral",
+          "category_name": "Category:Duomo_(Monza)",
+          "lat": 45.58359,
+          "lon": 9.27567,
+          "city": "Monza",
+          "state": "Lombardy",
+          "country": "Italy"
+        }
+      }
+    },
+    {
+      "image_path": "images/1ab97b5b618b587b7b5d.jpg",
+      "expected_landmark_id": 73107,
+      "status": 200,
+      "correct": false,
+      "response": {
+        "landmark_id": 104169,
+        "confidence": 0.1425160825252533,
+        "match_score": 0.1425160825252533,
+        "confidence_probability": 0.3823721434585603,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 104169,
+          "name": "Stirling Castle",
+          "category_name": "Category:Stirling_Castle",
+          "lat": 56.12388889,
+          "lon": -3.94777778,
+          "city": "Stirling",
+          "state": "Scotland",
+          "country": "United Kingdom"
+        }
+      }
+    },
+    {
+      "image_path": "images/6a9a481a57056114ce71.jpg",
+      "expected_landmark_id": 73107,
+      "status": 200,
+      "correct": true,
+      "response": {
+        "landmark_id": 73107,
+        "confidence": 0.44767913818359373,
+        "match_score": 0.44767913818359373,
+        "confidence_probability": 0.9885428482062911,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 73107,
+          "name": "George Washington's Mount Vernon",
+          "category_name": "Category:Mount_Vernon",
+          "lat": 38.70777778,
+          "lon": -77.08611111,
+          "city": "Mount Vernon",
+          "state": "Virginia",
+          "country": "United States"
+        }
+      }
+    },
+    {
+      "image_path": "images/6ced2b38c58000293e3d.jpg",
+      "expected_landmark_id": 73107,
+      "status": 200,
+      "correct": true,
+      "response": {
+        "landmark_id": 73107,
+        "confidence": 0.46552898883819577,
+        "match_score": 0.46552898883819577,
+        "confidence_probability": 0.9913918749070532,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 73107,
+          "name": "George Washington's Mount Vernon",
+          "category_name": "Category:Mount_Vernon",
+          "lat": 38.70777778,
+          "lon": -77.08611111,
+          "city": "Mount Vernon",
+          "state": "Virginia",
+          "country": "United States"
+        }
+      }
+    },
+    {
+      "image_path": "images/2d3616b7367fb38b52cc.jpg",
+      "expected_landmark_id": 73107,
+      "status": 200,
+      "correct": false,
+      "response": {
+        "landmark_id": 25719,
+        "confidence": 0.10571448802947998,
+        "match_score": 0.10571448802947998,
+        "confidence_probability": 0.25447427729596933,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 25719,
+          "name": "Monza Cathedral",
+          "category_name": "Category:Duomo_(Monza)",
+          "lat": 45.58359,
+          "lon": 9.27567,
+          "city": "Monza",
+          "state": "Lombardy",
+          "country": "Italy"
+        }
+      }
+    },
+    {
+      "image_path": "images/804c09751fdc013e1e53.jpg",
+      "expected_landmark_id": 73107,
+      "status": 200,
+      "correct": true,
+      "response": {
+        "landmark_id": 73107,
+        "confidence": 0.49368302822113036,
+        "match_score": 0.49368302822113036,
+        "confidence_probability": 0.9945240372703928,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 73107,
+          "name": "George Washington's Mount Vernon",
+          "category_name": "Category:Mount_Vernon",
+          "lat": 38.70777778,
+          "lon": -77.08611111,
+          "city": "Mount Vernon",
+          "state": "Virginia",
+          "country": "United States"
+        }
+      }
+    },
+    {
+      "image_path": "images/35125c3547273517dbd0.jpg",
+      "expected_landmark_id": 73107,
+      "status": 200,
+      "correct": true,
+      "response": {
+        "landmark_id": 73107,
+        "confidence": 0.36819674968719485,
+        "match_score": 0.36819674968719485,
+        "confidence_probability": 0.9597554698942243,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 73107,
+          "name": "George Washington's Mount Vernon",
+          "category_name": "Category:Mount_Vernon",
+          "lat": 38.70777778,
+          "lon": -77.08611111,
+          "city": "Mount Vernon",
+          "state": "Virginia",
+          "country": "United States"
+        }
+      }
+    },
+    {
+      "image_path": "images/68ae907022d5da793220.jpg",
+      "expected_landmark_id": 73107,
+      "status": 200,
+      "correct": false,
+      "response": {
+        "landmark_id": 104169,
+        "confidence": 0.2148790955543518,
+        "match_score": 0.2148790955543518,
+        "confidence_probability": 0.6662427453683006,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 104169,
+          "name": "Stirling Castle",
+          "category_name": "Category:Stirling_Castle",
+          "lat": 56.12388889,
+          "lon": -3.94777778,
+          "city": "Stirling",
+          "state": "Scotland",
+          "country": "United Kingdom"
+        }
+      }
+    },
+    {
+      "image_path": "images/95b1a2df82ba03ab54ee.jpg",
+      "expected_landmark_id": 73107,
+      "status": 200,
+      "correct": true,
+      "response": {
+        "landmark_id": 73107,
+        "confidence": 0.2899045944213867,
+        "match_score": 0.2899045944213867,
+        "confidence_probability": 0.8704617182833954,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 73107,
+          "name": "George Washington's Mount Vernon",
+          "category_name": "Category:Mount_Vernon",
+          "lat": 38.70777778,
+          "lon": -77.08611111,
+          "city": "Mount Vernon",
+          "state": "Virginia",
+          "country": "United States"
+        }
+      }
+    },
+    {
+      "image_path": "images/183190320c162b7de246.jpg",
+      "expected_landmark_id": 73107,
+      "status": 200,
+      "correct": true,
+      "response": {
+        "landmark_id": 73107,
+        "confidence": 0.3057518005371094,
+        "match_score": 0.3057518005371094,
+        "confidence_probability": 0.8967323125951114,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 73107,
+          "name": "George Washington's Mount Vernon",
+          "category_name": "Category:Mount_Vernon",
+          "lat": 38.70777778,
+          "lon": -77.08611111,
+          "city": "Mount Vernon",
+          "state": "Virginia",
+          "country": "United States"
+        }
+      }
+    },
+    {
+      "image_path": "images/bd435d3e000435839fb9.jpg",
+      "expected_landmark_id": 86294,
+      "status": 200,
+      "correct": false,
+      "response": {
+        "landmark_id": 104169,
+        "confidence": 0.06127681285142898,
+        "match_score": 0.06127681285142898,
+        "confidence_probability": 0.14260391254671403,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 104169,
+          "name": "Stirling Castle",
+          "category_name": "Category:Stirling_Castle",
+          "lat": 56.12388889,
+          "lon": -3.94777778,
+          "city": "Stirling",
+          "state": "Scotland",
+          "country": "United Kingdom"
+        }
+      }
+    },
+    {
+      "image_path": "images/25ec43e69212297bb1f4.jpg",
+      "expected_landmark_id": 86294,
+      "status": 200,
+      "correct": false,
+      "response": {
+        "landmark_id": 104169,
+        "confidence": 0.1056018352508545,
+        "match_score": 0.1056018352508545,
+        "confidence_probability": 0.2541286605099097,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 104169,
+          "name": "Stirling Castle",
+          "category_name": "Category:Stirling_Castle",
+          "lat": 56.12388889,
+          "lon": -3.94777778,
+          "city": "Stirling",
+          "state": "Scotland",
+          "country": "United Kingdom"
+        }
+      }
+    },
+    {
+      "image_path": "images/6da3221758e6bd716936.jpg",
+      "expected_landmark_id": 86294,
+      "status": 200,
+      "correct": false,
+      "response": {
+        "landmark_id": 73107,
+        "confidence": 0.04086608290672302,
+        "match_score": 0.04086608290672302,
+        "confidence_probability": 0.10678155277348769,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 73107,
+          "name": "George Washington's Mount Vernon",
+          "category_name": "Category:Mount_Vernon",
+          "lat": 38.70777778,
+          "lon": -77.08611111,
+          "city": "Mount Vernon",
+          "state": "Virginia",
+          "country": "United States"
+        }
+      }
+    },
+    {
+      "image_path": "images/40208b83a05302d77bff.jpg",
+      "expected_landmark_id": 86294,
+      "status": 200,
+      "correct": false,
+      "response": {
+        "landmark_id": 73107,
+        "confidence": 0.10682158470153809,
+        "match_score": 0.10682158470153809,
+        "confidence_probability": 0.25788726967901776,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 73107,
+          "name": "George Washington's Mount Vernon",
+          "category_name": "Category:Mount_Vernon",
+          "lat": 38.70777778,
+          "lon": -77.08611111,
+          "city": "Mount Vernon",
+          "state": "Virginia",
+          "country": "United States"
+        }
+      }
+    },
+    {
+      "image_path": "images/d92b6867cd9a1945c70d.jpg",
+      "expected_landmark_id": 86294,
+      "status": 200,
+      "correct": false,
+      "response": {
+        "landmark_id": 104169,
+        "confidence": 0.08051877021789551,
+        "match_score": 0.08051877021789551,
+        "confidence_probability": 0.18504690848283972,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 104169,
+          "name": "Stirling Castle",
+          "category_name": "Category:Stirling_Castle",
+          "lat": 56.12388889,
+          "lon": -3.94777778,
+          "city": "Stirling",
+          "state": "Scotland",
+          "country": "United Kingdom"
+        }
+      }
+    },
+    {
+      "image_path": "images/0922e3ebae033ab615aa.jpg",
+      "expected_landmark_id": 86294,
+      "status": 200,
+      "correct": false,
+      "response": {
+        "landmark_id": 73107,
+        "confidence": 0.03547484874725342,
+        "match_score": 0.03547484874725342,
+        "confidence_probability": 0.0987431206893901,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 73107,
+          "name": "George Washington's Mount Vernon",
+          "category_name": "Category:Mount_Vernon",
+          "lat": 38.70777778,
+          "lon": -77.08611111,
+          "city": "Mount Vernon",
+          "state": "Virginia",
+          "country": "United States"
+        }
+      }
+    },
+    {
+      "image_path": "images/e4fe1b4d8ba9b31f57a4.jpg",
+      "expected_landmark_id": 86294,
+      "status": 200,
+      "correct": false,
+      "response": {
+        "landmark_id": 73107,
+        "confidence": 0.05153633952140808,
+        "match_score": 0.05153633952140808,
+        "confidence_probability": 0.12439901555645345,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 73107,
+          "name": "George Washington's Mount Vernon",
+          "category_name": "Category:Mount_Vernon",
+          "lat": 38.70777778,
+          "lon": -77.08611111,
+          "city": "Mount Vernon",
+          "state": "Virginia",
+          "country": "United States"
+        }
+      }
+    },
+    {
+      "image_path": "images/c77ff3b1ed6cb161bcd6.jpg",
+      "expected_landmark_id": 86294,
+      "status": 200,
+      "correct": false,
+      "response": {
+        "landmark_id": 104169,
+        "confidence": 0.06903334856033326,
+        "match_score": 0.06903334856033326,
+        "confidence_probability": 0.15864573316257918,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 104169,
+          "name": "Stirling Castle",
+          "category_name": "Category:Stirling_Castle",
+          "lat": 56.12388889,
+          "lon": -3.94777778,
+          "city": "Stirling",
+          "state": "Scotland",
+          "country": "United Kingdom"
+        }
+      }
+    },
+    {
+      "image_path": "images/7da786c31fcf57db8959.jpg",
+      "expected_landmark_id": 86294,
+      "status": 200,
+      "correct": false,
+      "response": {
+        "landmark_id": 73107,
+        "confidence": 0.01921377182006836,
+        "match_score": 0.01921377182006836,
+        "confidence_probability": 0.0776760196052264,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 73107,
+          "name": "George Washington's Mount Vernon",
+          "category_name": "Category:Mount_Vernon",
+          "lat": 38.70777778,
+          "lon": -77.08611111,
+          "city": "Mount Vernon",
+          "state": "Virginia",
+          "country": "United States"
+        }
+      }
+    },
+    {
+      "image_path": "images/7de9e8bd0df85e6ca4f6.jpg",
+      "expected_landmark_id": 86294,
+      "status": 200,
+      "correct": false,
+      "response": {
+        "landmark_id": 104169,
+        "confidence": 0.05419801473617554,
+        "match_score": 0.05419801473617554,
+        "confidence_probability": 0.1291658782428153,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 104169,
+          "name": "Stirling Castle",
+          "category_name": "Category:Stirling_Castle",
+          "lat": 56.12388889,
+          "lon": -3.94777778,
+          "city": "Stirling",
+          "state": "Scotland",
+          "country": "United Kingdom"
+        }
+      }
+    },
+    {
+      "image_path": "images/cf4297327b49794a6d9d.jpg",
+      "expected_landmark_id": 86294,
+      "status": 200,
+      "correct": false,
+      "response": {
+        "landmark_id": 104169,
+        "confidence": 0.05035148710012436,
+        "match_score": 0.05035148710012436,
+        "confidence_probability": 0.12232601535618495,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 104169,
+          "name": "Stirling Castle",
+          "category_name": "Category:Stirling_Castle",
+          "lat": 56.12388889,
+          "lon": -3.94777778,
+          "city": "Stirling",
+          "state": "Scotland",
+          "country": "United Kingdom"
+        }
+      }
+    },
+    {
+      "image_path": "images/fad085d274647989cc18.jpg",
+      "expected_landmark_id": 86294,
+      "status": 200,
+      "correct": false,
+      "response": {
+        "landmark_id": 104169,
+        "confidence": 0.04696013778448105,
+        "match_score": 0.04696013778448105,
+        "confidence_probability": 0.11655634203053664,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 104169,
+          "name": "Stirling Castle",
+          "category_name": "Category:Stirling_Castle",
+          "lat": 56.12388889,
+          "lon": -3.94777778,
+          "city": "Stirling",
+          "state": "Scotland",
+          "country": "United Kingdom"
+        }
+      }
+    },
+    {
+      "image_path": "images/ac6870d7cf0910fd5580.jpg",
+      "expected_landmark_id": 86294,
+      "status": 200,
+      "correct": false,
+      "response": {
+        "landmark_id": 104169,
+        "confidence": 0.031007263064384463,
+        "match_score": 0.031007263064384463,
+        "confidence_probability": 0.09249471807422216,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 104169,
+          "name": "Stirling Castle",
+          "category_name": "Category:Stirling_Castle",
+          "lat": 56.12388889,
+          "lon": -3.94777778,
+          "city": "Stirling",
+          "state": "Scotland",
+          "country": "United Kingdom"
+        }
+      }
+    },
+    {
+      "image_path": "images/c5b40783882118c6f30e.jpg",
+      "expected_landmark_id": 86294,
+      "status": 200,
+      "correct": false,
+      "response": {
+        "landmark_id": 104169,
+        "confidence": 0.06432074010372162,
+        "match_score": 0.06432074010372162,
+        "confidence_probability": 0.14873179683186544,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 104169,
+          "name": "Stirling Castle",
+          "category_name": "Category:Stirling_Castle",
+          "lat": 56.12388889,
+          "lon": -3.94777778,
+          "city": "Stirling",
+          "state": "Scotland",
+          "country": "United Kingdom"
+        }
+      }
+    },
+    {
+      "image_path": "images/d60aad467d11cec0ff6d.jpg",
+      "expected_landmark_id": 86294,
+      "status": 200,
+      "correct": false,
+      "response": {
+        "landmark_id": 104169,
+        "confidence": 0.05668816119432449,
+        "match_score": 0.05668816119432449,
+        "confidence_probability": 0.13376554698514193,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 104169,
+          "name": "Stirling Castle",
+          "category_name": "Category:Stirling_Castle",
+          "lat": 56.12388889,
+          "lon": -3.94777778,
+          "city": "Stirling",
+          "state": "Scotland",
+          "country": "United Kingdom"
+        }
+      }
+    },
+    {
+      "image_path": "images/6d1a415bd63c82dddc0c.jpg",
+      "expected_landmark_id": 104169,
+      "status": 200,
+      "correct": true,
+      "response": {
+        "landmark_id": 104169,
+        "confidence": 0.35127925872802734,
+        "match_score": 0.35127925872802734,
+        "confidence_probability": 0.9477476393994321,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 104169,
+          "name": "Stirling Castle",
+          "category_name": "Category:Stirling_Castle",
+          "lat": 56.12388889,
+          "lon": -3.94777778,
+          "city": "Stirling",
+          "state": "Scotland",
+          "country": "United Kingdom"
+        }
+      }
+    },
+    {
+      "image_path": "images/be80679ddb2e06c0cee4.jpg",
+      "expected_landmark_id": 104169,
+      "status": 200,
+      "correct": true,
+      "response": {
+        "landmark_id": 104169,
+        "confidence": 0.1503315567970276,
+        "match_score": 0.1503315567970276,
+        "confidence_probability": 0.41264339401988326,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 104169,
+          "name": "Stirling Castle",
+          "category_name": "Category:Stirling_Castle",
+          "lat": 56.12388889,
+          "lon": -3.94777778,
+          "city": "Stirling",
+          "state": "Scotland",
+          "country": "United Kingdom"
+        }
+      }
+    },
+    {
+      "image_path": "images/f2871c73eb5005754053.jpg",
+      "expected_landmark_id": 104169,
+      "status": 200,
+      "correct": true,
+      "response": {
+        "landmark_id": 104169,
+        "confidence": 0.295380163192749,
+        "match_score": 0.295380163192749,
+        "confidence_probability": 0.8801271031788751,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 104169,
+          "name": "Stirling Castle",
+          "category_name": "Category:Stirling_Castle",
+          "lat": 56.12388889,
+          "lon": -3.94777778,
+          "city": "Stirling",
+          "state": "Scotland",
+          "country": "United Kingdom"
+        }
+      }
+    },
+    {
+      "image_path": "images/8d6a32053d106af35403.jpg",
+      "expected_landmark_id": 104169,
+      "status": 200,
+      "correct": true,
+      "response": {
+        "landmark_id": 104169,
+        "confidence": 0.1765993118286133,
+        "match_score": 0.1765993118286133,
+        "confidence_probability": 0.517974003391224,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 104169,
+          "name": "Stirling Castle",
+          "category_name": "Category:Stirling_Castle",
+          "lat": 56.12388889,
+          "lon": -3.94777778,
+          "city": "Stirling",
+          "state": "Scotland",
+          "country": "United Kingdom"
+        }
+      }
+    },
+    {
+      "image_path": "images/20dd3edd4c54895d2ff4.jpg",
+      "expected_landmark_id": 104169,
+      "status": 200,
+      "correct": true,
+      "response": {
+        "landmark_id": 104169,
+        "confidence": 0.2907645463943481,
+        "match_score": 0.2907645463943481,
+        "confidence_probability": 0.8720224317360337,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 104169,
+          "name": "Stirling Castle",
+          "category_name": "Category:Stirling_Castle",
+          "lat": 56.12388889,
+          "lon": -3.94777778,
+          "city": "Stirling",
+          "state": "Scotland",
+          "country": "United Kingdom"
+        }
+      }
+    },
+    {
+      "image_path": "images/a9a062f03b1790483b23.jpg",
+      "expected_landmark_id": 104169,
+      "status": 200,
+      "correct": true,
+      "response": {
+        "landmark_id": 104169,
+        "confidence": 0.3530894637107849,
+        "match_score": 0.3530894637107849,
+        "confidence_probability": 0.9491790976084793,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 104169,
+          "name": "Stirling Castle",
+          "category_name": "Category:Stirling_Castle",
+          "lat": 56.12388889,
+          "lon": -3.94777778,
+          "city": "Stirling",
+          "state": "Scotland",
+          "country": "United Kingdom"
+        }
+      }
+    },
+    {
+      "image_path": "images/62ebf482603d62f90790.jpg",
+      "expected_landmark_id": 104169,
+      "status": 200,
+      "correct": true,
+      "response": {
+        "landmark_id": 104169,
+        "confidence": 0.22492663264274596,
+        "match_score": 0.22492663264274596,
+        "confidence_probability": 0.7013626611610784,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 104169,
+          "name": "Stirling Castle",
+          "category_name": "Category:Stirling_Castle",
+          "lat": 56.12388889,
+          "lon": -3.94777778,
+          "city": "Stirling",
+          "state": "Scotland",
+          "country": "United Kingdom"
+        }
+      }
+    },
+    {
+      "image_path": "images/54301b6ff5ea56f91a11.jpg",
+      "expected_landmark_id": 104169,
+      "status": 200,
+      "correct": false,
+      "response": {
+        "landmark_id": 73107,
+        "confidence": 0.0989373803138733,
+        "match_score": 0.0989373803138733,
+        "confidence_probability": 0.23423795730786556,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 73107,
+          "name": "George Washington's Mount Vernon",
+          "category_name": "Category:Mount_Vernon",
+          "lat": 38.70777778,
+          "lon": -77.08611111,
+          "city": "Mount Vernon",
+          "state": "Virginia",
+          "country": "United States"
+        }
+      }
+    },
+    {
+      "image_path": "images/a9eac3ac3e016211fa37.jpg",
+      "expected_landmark_id": 104169,
+      "status": 200,
+      "correct": true,
+      "response": {
+        "landmark_id": 104169,
+        "confidence": 0.4466870784759522,
+        "match_score": 0.4466870784759522,
+        "confidence_probability": 0.9883596335568323,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 104169,
+          "name": "Stirling Castle",
+          "category_name": "Category:Stirling_Castle",
+          "lat": 56.12388889,
+          "lon": -3.94777778,
+          "city": "Stirling",
+          "state": "Scotland",
+          "country": "United Kingdom"
+        }
+      }
+    },
+    {
+      "image_path": "images/28f47ede97095e99f225.jpg",
+      "expected_landmark_id": 104169,
+      "status": 200,
+      "correct": true,
+      "response": {
+        "landmark_id": 104169,
+        "confidence": 0.03039262890815735,
+        "match_score": 0.03039262890815735,
+        "confidence_probability": 0.0916634066587059,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 104169,
+          "name": "Stirling Castle",
+          "category_name": "Category:Stirling_Castle",
+          "lat": 56.12388889,
+          "lon": -3.94777778,
+          "city": "Stirling",
+          "state": "Scotland",
+          "country": "United Kingdom"
+        }
+      }
+    },
+    {
+      "image_path": "images/d5826daa9dda2175c56c.jpg",
+      "expected_landmark_id": 104169,
+      "status": 200,
+      "correct": true,
+      "response": {
+        "landmark_id": 104169,
+        "confidence": 0.2326200306415558,
+        "match_score": 0.2326200306415558,
+        "confidence_probability": 0.7267635311610608,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 104169,
+          "name": "Stirling Castle",
+          "category_name": "Category:Stirling_Castle",
+          "lat": 56.12388889,
+          "lon": -3.94777778,
+          "city": "Stirling",
+          "state": "Scotland",
+          "country": "United Kingdom"
+        }
+      }
+    },
+    {
+      "image_path": "images/75c5b51491c47b88ed56.jpg",
+      "expected_landmark_id": 104169,
+      "status": 200,
+      "correct": false,
+      "response": {
+        "landmark_id": 73107,
+        "confidence": 0.037408369779586795,
+        "match_score": 0.037408369779586795,
+        "confidence_probability": 0.10156212052130154,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 73107,
+          "name": "George Washington's Mount Vernon",
+          "category_name": "Category:Mount_Vernon",
+          "lat": 38.70777778,
+          "lon": -77.08611111,
+          "city": "Mount Vernon",
+          "state": "Virginia",
+          "country": "United States"
+        }
+      }
+    },
+    {
+      "image_path": "images/0006c169e64724cd5467.jpg",
+      "expected_landmark_id": 104169,
+      "status": 200,
+      "correct": true,
+      "response": {
+        "landmark_id": 104169,
+        "confidence": 0.510246205329895,
+        "match_score": 0.510246205329895,
+        "confidence_probability": 0.9958058646033534,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 104169,
+          "name": "Stirling Castle",
+          "category_name": "Category:Stirling_Castle",
+          "lat": 56.12388889,
+          "lon": -3.94777778,
+          "city": "Stirling",
+          "state": "Scotland",
+          "country": "United Kingdom"
+        }
+      }
+    },
+    {
+      "image_path": "images/9bfda29e24db6e48b754.jpg",
+      "expected_landmark_id": 104169,
+      "status": 200,
+      "correct": false,
+      "response": {
+        "landmark_id": 25719,
+        "confidence": 0.21561927795410157,
+        "match_score": 0.21561927795410157,
+        "confidence_probability": 0.668900249039984,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 25719,
+          "name": "Monza Cathedral",
+          "category_name": "Category:Duomo_(Monza)",
+          "lat": 45.58359,
+          "lon": 9.27567,
+          "city": "Monza",
+          "state": "Lombardy",
+          "country": "Italy"
+        }
+      }
+    },
+    {
+      "image_path": "images/09dad9f5cc73257f70b9.jpg",
+      "expected_landmark_id": 104169,
+      "status": 200,
+      "correct": true,
+      "response": {
+        "landmark_id": 104169,
+        "confidence": 0.3637765645980835,
+        "match_score": 0.3637765645980835,
+        "confidence_probability": 0.9569006662506836,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 104169,
+          "name": "Stirling Castle",
+          "category_name": "Category:Stirling_Castle",
+          "lat": 56.12388889,
+          "lon": -3.94777778,
+          "city": "Stirling",
+          "state": "Scotland",
+          "country": "United Kingdom"
+        }
+      }
+    },
+    {
+      "image_path": "images/2b3bc974830cfe690027.jpg",
+      "expected_landmark_id": 189446,
+      "status": 200,
+      "correct": false,
+      "response": {
+        "landmark_id": 25719,
+        "confidence": 0.1093481183052063,
+        "match_score": 0.1093481183052063,
+        "confidence_probability": 0.2657872140774798,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 25719,
+          "name": "Monza Cathedral",
+          "category_name": "Category:Duomo_(Monza)",
+          "lat": 45.58359,
+          "lon": 9.27567,
+          "city": "Monza",
+          "state": "Lombardy",
+          "country": "Italy"
+        }
+      }
+    },
+    {
+      "image_path": "images/c01117c3c95cfc265f10.jpg",
+      "expected_landmark_id": 189446,
+      "status": 200,
+      "correct": false,
+      "response": {
+        "landmark_id": 104169,
+        "confidence": 0.1256955623626709,
+        "match_score": 0.1256955623626709,
+        "confidence_probability": 0.32046750738851676,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 104169,
+          "name": "Stirling Castle",
+          "category_name": "Category:Stirling_Castle",
+          "lat": 56.12388889,
+          "lon": -3.94777778,
+          "city": "Stirling",
+          "state": "Scotland",
+          "country": "United Kingdom"
+        }
+      }
+    },
+    {
+      "image_path": "images/7fa52c691666ff633f9d.jpg",
+      "expected_landmark_id": 189446,
+      "status": 200,
+      "correct": false,
+      "response": {
+        "landmark_id": 25719,
+        "confidence": 0.10280186533927917,
+        "match_score": 0.10280186533927917,
+        "confidence_probability": 0.2456382648208586,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 25719,
+          "name": "Monza Cathedral",
+          "category_name": "Category:Duomo_(Monza)",
+          "lat": 45.58359,
+          "lon": 9.27567,
+          "city": "Monza",
+          "state": "Lombardy",
+          "country": "Italy"
+        }
+      }
+    },
+    {
+      "image_path": "images/cc8e1e2de8b12cbf9cf1.jpg",
+      "expected_landmark_id": 189446,
+      "status": 200,
+      "correct": false,
+      "response": {
+        "landmark_id": 104169,
+        "confidence": 0.162342631816864,
+        "match_score": 0.162342631816864,
+        "confidence_probability": 0.4604015891331932,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 104169,
+          "name": "Stirling Castle",
+          "category_name": "Category:Stirling_Castle",
+          "lat": 56.12388889,
+          "lon": -3.94777778,
+          "city": "Stirling",
+          "state": "Scotland",
+          "country": "United Kingdom"
+        }
+      }
+    },
+    {
+      "image_path": "images/1c559a80ea763f755fa8.jpg",
+      "expected_landmark_id": 189446,
+      "status": 200,
+      "correct": false,
+      "response": {
+        "landmark_id": 25719,
+        "confidence": 0.07713730931282044,
+        "match_score": 0.07713730931282044,
+        "confidence_probability": 0.17693853191866835,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 25719,
+          "name": "Monza Cathedral",
+          "category_name": "Category:Duomo_(Monza)",
+          "lat": 45.58359,
+          "lon": 9.27567,
+          "city": "Monza",
+          "state": "Lombardy",
+          "country": "Italy"
+        }
+      }
+    },
+    {
+      "image_path": "images/f6f39c007334f57ca1ee.jpg",
+      "expected_landmark_id": 189446,
+      "status": 200,
+      "correct": false,
+      "response": {
+        "landmark_id": 25719,
+        "confidence": 0.1217438131570816,
+        "match_score": 0.1217438131570816,
+        "confidence_probability": 0.30670740455947143,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 25719,
+          "name": "Monza Cathedral",
+          "category_name": "Category:Duomo_(Monza)",
+          "lat": 45.58359,
+          "lon": 9.27567,
+          "city": "Monza",
+          "state": "Lombardy",
+          "country": "Italy"
+        }
+      }
+    },
+    {
+      "image_path": "images/0a61d9c2c44fd2b6f222.jpg",
+      "expected_landmark_id": 189446,
+      "status": 200,
+      "correct": false,
+      "response": {
+        "landmark_id": 25719,
+        "confidence": 0.10417120456695557,
+        "match_score": 0.10417120456695557,
+        "confidence_probability": 0.2497664949461787,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 25719,
+          "name": "Monza Cathedral",
+          "category_name": "Category:Duomo_(Monza)",
+          "lat": 45.58359,
+          "lon": 9.27567,
+          "city": "Monza",
+          "state": "Lombardy",
+          "country": "Italy"
+        }
+      }
+    },
+    {
+      "image_path": "images/4912e314aad07da26264.jpg",
+      "expected_landmark_id": 189446,
+      "status": 200,
+      "correct": false,
+      "response": {
+        "landmark_id": 25719,
+        "confidence": 0.0785998284816742,
+        "match_score": 0.0785998284816742,
+        "confidence_probability": 0.18041076768998637,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 25719,
+          "name": "Monza Cathedral",
+          "category_name": "Category:Duomo_(Monza)",
+          "lat": 45.58359,
+          "lon": 9.27567,
+          "city": "Monza",
+          "state": "Lombardy",
+          "country": "Italy"
+        }
+      }
+    },
+    {
+      "image_path": "images/16f1d37f69020ecc1349.jpg",
+      "expected_landmark_id": 189446,
+      "status": 200,
+      "correct": false,
+      "response": {
+        "landmark_id": 25719,
+        "confidence": 0.07083733081817627,
+        "match_score": 0.07083733081817627,
+        "confidence_probability": 0.16258030694485223,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 25719,
+          "name": "Monza Cathedral",
+          "category_name": "Category:Duomo_(Monza)",
+          "lat": 45.58359,
+          "lon": 9.27567,
+          "city": "Monza",
+          "state": "Lombardy",
+          "country": "Italy"
+        }
+      }
+    },
+    {
+      "image_path": "images/3ddba9bda393f9d7b557.jpg",
+      "expected_landmark_id": 189446,
+      "status": 200,
+      "correct": false,
+      "response": {
+        "landmark_id": 25719,
+        "confidence": 0.13112520575523376,
+        "match_score": 0.13112520575523376,
+        "confidence_probability": 0.3398909636467348,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 25719,
+          "name": "Monza Cathedral",
+          "category_name": "Category:Duomo_(Monza)",
+          "lat": 45.58359,
+          "lon": 9.27567,
+          "city": "Monza",
+          "state": "Lombardy",
+          "country": "Italy"
+        }
+      }
+    },
+    {
+      "image_path": "images/dcb732aef539f09f0667.jpg",
+      "expected_landmark_id": 189446,
+      "status": 200,
+      "correct": false,
+      "response": {
+        "landmark_id": 25719,
+        "confidence": 0.10166393816471099,
+        "match_score": 0.10166393816471099,
+        "confidence_probability": 0.24224287398537814,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 25719,
+          "name": "Monza Cathedral",
+          "category_name": "Category:Duomo_(Monza)",
+          "lat": 45.58359,
+          "lon": 9.27567,
+          "city": "Monza",
+          "state": "Lombardy",
+          "country": "Italy"
+        }
+      }
+    },
+    {
+      "image_path": "images/ab676a23634a2be4ba07.jpg",
+      "expected_landmark_id": 189446,
+      "status": 200,
+      "correct": false,
+      "response": {
+        "landmark_id": 104169,
+        "confidence": 0.05941203832626343,
+        "match_score": 0.05941203832626343,
+        "confidence_probability": 0.13895477859599317,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 104169,
+          "name": "Stirling Castle",
+          "category_name": "Category:Stirling_Castle",
+          "lat": 56.12388889,
+          "lon": -3.94777778,
+          "city": "Stirling",
+          "state": "Scotland",
+          "country": "United Kingdom"
+        }
+      }
+    },
+    {
+      "image_path": "images/c0b4ad377f8412578dde.jpg",
+      "expected_landmark_id": 189446,
+      "status": 200,
+      "correct": false,
+      "response": {
+        "landmark_id": 25719,
+        "confidence": 0.13688730001449587,
+        "match_score": 0.13688730001449587,
+        "confidence_probability": 0.3611081795492676,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 25719,
+          "name": "Monza Cathedral",
+          "category_name": "Category:Duomo_(Monza)",
+          "lat": 45.58359,
+          "lon": 9.27567,
+          "city": "Monza",
+          "state": "Lombardy",
+          "country": "Italy"
+        }
+      }
+    },
+    {
+      "image_path": "images/b7df21ee49b6669a24ec.jpg",
+      "expected_landmark_id": 189446,
+      "status": 200,
+      "correct": false,
+      "response": {
+        "landmark_id": 25719,
+        "confidence": 0.15046372413635256,
+        "match_score": 0.15046372413635256,
+        "confidence_probability": 0.41316174351704626,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 25719,
+          "name": "Monza Cathedral",
+          "category_name": "Category:Duomo_(Monza)",
+          "lat": 45.58359,
+          "lon": 9.27567,
+          "city": "Monza",
+          "state": "Lombardy",
+          "country": "Italy"
+        }
+      }
+    },
+    {
+      "image_path": "images/02b9622334425d1ec6ac.jpg",
+      "expected_landmark_id": 189446,
+      "status": 200,
+      "correct": false,
+      "response": {
+        "landmark_id": 25719,
+        "confidence": 0.056957767903804774,
+        "match_score": 0.056957767903804774,
+        "confidence_probability": 0.13427177347541797,
+        "confidence_calibrated": true,
+        "probability_description": "Estimated probability of a correct landmark ID for data comparable to the calibration set; requires independent validation.",
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 25719,
+          "name": "Monza Cathedral",
+          "category_name": "Category:Duomo_(Monza)",
+          "lat": 45.58359,
+          "lon": 9.27567,
+          "city": "Monza",
+          "state": "Lombardy",
+          "country": "Italy"
+        }
+      }
+    }
+  ],
+  "calibration_metrics": {
+    "sample_count": 60,
+    "accuracy": 0.38333333333333336,
+    "brier_score": 0.10903676972219453,
+    "log_loss": 0.36526572918598477,
+    "expected_calibration_error": 0.08194740752710304,
+    "reliability_bins": [
+      {
+        "lower": 0.0,
+        "upper": 0.2,
+        "count": 23,
+        "mean_probability": 0.13124601716678963,
+        "observed_accuracy": 0.13043478260869565,
+        "accuracy_interval_95": [
+          0.04537576514344702,
+          0.32127897973018194
+        ]
+      },
+      {
+        "lower": 0.2,
+        "upper": 0.4,
+        "count": 14,
+        "mean_probability": 0.28090956621457075,
+        "observed_accuracy": 0.07142857142857142,
+        "accuracy_interval_95": [
+          0.012721886112291636,
+          0.3146926955395781
+        ]
+      },
+      {
+        "lower": 0.4,
+        "upper": 0.6,
+        "count": 4,
+        "mean_probability": 0.45104518251533665,
+        "observed_accuracy": 0.5,
+        "accuracy_interval_95": [
+          0.15003570882017148,
+          0.8499642911798285
+        ]
+      },
+      {
+        "lower": 0.6,
+        "upper": 0.8,
+        "count": 4,
+        "mean_probability": 0.6908172966826059,
+        "observed_accuracy": 0.5,
+        "accuracy_interval_95": [
+          0.15003570882017148,
+          0.8499642911798285
+        ]
+      },
+      {
+        "lower": 0.8,
+        "upper": 1.0,
+        "count": 15,
+        "mean_probability": 0.9329090884588698,
+        "observed_accuracy": 1.0,
+        "accuracy_interval_95": [
+          0.7961107336956521,
+          1.0
+        ]
+      }
+    ]
+  },
+  "calibrated_prediction_count": 60
+}
