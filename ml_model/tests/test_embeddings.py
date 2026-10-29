@@ -21,9 +21,31 @@ def test_image_preprocessing():
     with pytest.raises(OSError):
         read_image(b"not an image")
 
+
+def test_large_decoded_image_is_rejected(monkeypatch):
+    monkeypatch.setattr('landmark_ml.embeddings.MAX_IMAGE_PIXELS', 100)
+    with pytest.raises(ValueError, match='million pixels'):
+        read_image(Image.new('RGB', (20, 20)))
+
+
+def test_failed_batch_closes_images_already_opened(monkeypatch):
+    from landmark_ml.embeddings import DinoV2Embedder
+    image = Image.new('RGB', (20, 20))
+    def prepare(source):
+        if source == 'bad':
+            raise OSError('invalid image')
+        return image
+    monkeypatch.setattr('landmark_ml.embeddings.read_image', prepare)
+    embedder = DinoV2Embedder.__new__(DinoV2Embedder)
+    embedder.preprocess_workers = 0
+    with pytest.raises(OSError):
+        embedder.embed(['good', 'bad'])
+    with pytest.raises(ValueError):
+        image.getpixel((0, 0))
+
 @pytest.mark.integration
 def test_full_pipeline(tmp_path):
-    model = Path(__file__).resolve().parents[1] / "dinov2-small"
+    model = Path(__file__).resolve().parents[2] / "dinov2-small"
     if not (model / "model.safetensors").is_file():
         pytest.skip("Local DINOv2 weights are not installed")
     rng = np.random.default_rng(42)

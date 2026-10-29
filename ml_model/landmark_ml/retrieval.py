@@ -1,6 +1,8 @@
 from dataclasses import asdict, dataclass
 import json
 from pathlib import Path
+import shutil
+import tempfile
 
 import faiss
 import numpy as np
@@ -48,17 +50,25 @@ class ReferenceIndex:
         self._paths.update(paths)
 
     def predict(self, vector, top_k: int = 5) -> dict:
+        return self.predict_batch(np.asarray(vector).reshape(1, -1), top_k)[0]
+
+    def predict_batch(self, vectors, top_k: int = 5) -> list[dict]:
         if type(top_k) is not int or top_k < 1:
             raise ValueError("Must be a positive integer")
         if not self.references:
             raise ValueError("Reference index is empty")
-        query = normalize(np.asarray(vector).reshape(1, -1), self.index.d)
-        scores, positions = self.index.search(query, min(top_k, self.index.ntotal))
+        queries = normalize(vectors, self.index.d)
+        scores, positions = self.index.search(queries, min(top_k, self.index.ntotal))
+        return [self._prediction(row_scores, row_positions) for row_scores, row_positions in zip(scores, positions)]
+
+    def _prediction(self, scores, positions):
+        if not np.isfinite(scores).all() or any(position < 0 or position >= len(self.references) for position in positions):
+            raise ValueError("Reference search returned invalid neighbors")
         matches = [
             {"landmark_id": self.references[int(pos)].landmark_id,
              "score": float(np.clip(score, -1, 1)),
              "image_path": self.references[int(pos)].image_path}
-             for score, pos in zip(scores[0], positions[0])
+             for score, pos in zip(scores, positions)
         ]
         groups = {}
         for match in matches:
@@ -74,15 +84,27 @@ class ReferenceIndex:
                 "similarity": similarity, "agreement": agreement,
                 "top_matches": matches}
 
-    def save(self, directory: str | Path):
+    def save(self, directory: str | Path, extra_files=None):
         if not self.references:
             raise ValueError("Cannot save an empty index")
         directory = Path(directory)
-        directory.mkdir(parents=True, exist_ok=False)
-        faiss.write_index(self.index, str(directory / "images.faiss"))
-        payload = {"version": 1, "signature": self.signature,
-                   "references": [asdict(ref) for ref in self.references]}
-        (directory / "references.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        if directory.exists():
+            raise FileExistsError(directory)
+        directory.parent.mkdir(parents=True, exist_ok=True)
+        staging = Path(tempfile.mkdtemp(prefix=directory.name + ".pending-", dir=directory.parent))
+        try:
+            faiss.write_index(self.index, str(staging / "images.faiss"))
+            payload = {"version": 1, "signature": self.signature,
+                       "references": [asdict(ref) for ref in self.references]}
+            (staging / "references.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
+            for name, content in (extra_files or {}).items():
+                if name not in ('calibration.json', 'recognition-policy.json'):
+                    raise ValueError('Unsupported runtime configuration filename')
+                (staging / name).write_text(json.dumps(content, indent=2), encoding='utf-8')
+            staging.rename(directory)
+        finally:
+            if staging.exists():
+                shutil.rmtree(staging)
 
     @classmethod
     def load(cls, directory: str | Path, expected_signature: str):
@@ -91,12 +113,14 @@ class ReferenceIndex:
         if payload["version"] != 1 or payload["signature"] != expected_signature:
             raise ValueError("Index model does not match preprocessing")
         index = faiss.read_index(str(directory / "images.faiss"))
-        if not isinstance(index, (faiss.IndexFlatIP, faiss.IndexPQ, faiss.IndexScalarQuantizer)) or index.metric_type != faiss.METRIC_INNER_PRODUCT:
+        if not isinstance(index, (faiss.IndexFlatIP, faiss.IndexPQ, faiss.IndexScalarQuantizer)) or index.metric_type != faiss.METRIC_INNER_PRODUCT or not index.is_trained:
             raise ValueError("Expected a supported inner product index")
         result = cls(index.d, expected_signature)
         result.index = index
         result.references = [Reference(**ref) for ref in payload["references"]]
         result._paths = {ref.image_path for ref in result.references}
+        if len(result._paths) != len(result.references):
+            raise ValueError("Duplicate reference image paths in mapping")
         if index.ntotal != len(result.references) or not result.references:
             raise ValueError("Index and reference mapping counts do not match or are empty")
         return result

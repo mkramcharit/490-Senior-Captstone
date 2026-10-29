@@ -11,12 +11,42 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
+def report_full_index(report, output):
+    selected = report['test'].get('displayed_probability_metrics')
+    output.mkdir(parents=True, exist_ok=True)
+    if selected is None:
+        (output / 'summary.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
+        raise ValueError('No evaluated displayable probabilities; no reliability curve can be claimed. See summary.json.')
+    bins = selected['reliability_bins']
+    figure, axis = plt.subplots(figsize=(6, 5))
+    axis.plot([0, 1], [0, 1], '--', color='gray')
+    for row in bins:
+        accuracy = row['observed_accuracy']
+        lower, upper = row['accuracy_interval_95']
+        axis.errorbar(row['mean_probability'], accuracy, yerr=[[max(0, accuracy-lower)], [max(0, upper-accuracy)]], fmt='o', capsize=4)
+        axis.annotate(f"n={row['count']}", (row['mean_probability'], accuracy), xytext=(5, 7), textcoords='offset points')
+    axis.set(xlim=(-.03, 1.03), ylim=(-.03, 1.03), xlabel='Estimated correctness probability', ylabel='Observed correctness',
+             title=f"Accepted, in-range predictions: {selected['sample_count']} of {report['test_samples']} test photos")
+    figure.tight_layout()
+    figure.savefig(output / 'reliability.png', dpi=180)
+    plt.close(figure)
+    (output / 'summary.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
+    print(json.dumps(selected, indent=2))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("evaluation", type=Path)
     parser.add_argument("output", type=Path)
     args = parser.parse_args()
     report = json.loads(args.evaluation.read_text(encoding="utf-8"))
+    if 'probability_metrics' in report and 'total_queries' in report:
+        report_full_index({'test':{'displayed_probability_metrics':report['probability_metrics']},
+                           'test_samples':report['total_queries'],**report},args.output)
+        return
+    if 'test_samples' in report and 'test' in report:
+        report_full_index(report, args.output)
+        return
     rows = report["test_results"]
     calibrated = report["calibrated_probability"]
     raw = report["raw_match_score_as_probability"]

@@ -6,14 +6,21 @@ import numpy as np
 from PIL import Image, ImageOps
 
 ImageInput = str | Path | bytes | BinaryIO | Image.Image
+MAX_IMAGE_PIXELS = 25_000_000
 
 
 def read_image(source: ImageInput) -> Image.Image:
     if isinstance(source, Image.Image):
+        if source.width * source.height > MAX_IMAGE_PIXELS:
+            raise ValueError('Image exceeds 25 million pixels')
         return ImageOps.exif_transpose(source).convert("RGB")
     if isinstance(source, bytes):
+        if len(source) > 10 * 1024 * 1024:
+            raise ValueError('Image exceeds 10 MB')
         source = BytesIO(source)
     with Image.open(source) as image:
+        if image.width * image.height > MAX_IMAGE_PIXELS:
+            raise ValueError('Image exceeds 25 million pixels')
         return ImageOps.exif_transpose(image).convert("RGB")
 
 
@@ -66,7 +73,8 @@ class DinoV2Embedder:
         else:
             prepared = []
             try:
-                prepared = [read_image(source) for source in images]
+                for source in images:
+                    prepared.append(read_image(source))
                 inputs = self.processor(images=prepared, return_tensors="pt").to(self.device)
             finally:
                 for image in prepared:

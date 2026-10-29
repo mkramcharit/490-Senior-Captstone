@@ -33,7 +33,7 @@ def status(root, phase, **values):
     print(json.dumps(payload), flush=True)
 
 
-def collect(root, pipeline, per_split):
+def collect(root, pipeline, per_split, exclude_manifests=()):
     manifest = root / 'manifest.json'
     if manifest.is_file():
         return json.loads(manifest.read_text(encoding='utf-8'))
@@ -48,7 +48,24 @@ def collect(root, pipeline, per_split):
     rows = []
     seen = []
     excluded = []
-    for number in range(20):
+    excluded_ids = set()
+    for previous in exclude_manifests:
+        for row in json.loads(previous.read_text(encoding='utf-8')):
+            if row.get('split') != 'test':
+                continue
+            excluded_ids.add(row['id'])
+            path = previous.parent / row['image_path']
+            digest = hashlib.sha256(path.read_bytes()).hexdigest()
+            with Image.open(path) as original:
+                pixels = np.asarray(ImageOps.exif_transpose(original).convert('L').resize((9, 8)))
+                visual = int.from_bytes(np.packbits((pixels[:, 1:] > pixels[:, :-1]).ravel()).tobytes(), 'big')
+            seen.append((digest, visual))
+    checkpoint = root / 'collection-state.json'
+    next_archive = 0
+    if checkpoint.is_file():
+        state = json.loads(checkpoint.read_text(encoding='utf-8'))
+        rows, seen, excluded, next_archive = state['rows'], state['seen'], state['excluded'], state['next_archive']
+    for number in range(next_archive, 20):
         status(root, 'collecting_official_test_images', archive=number, collected=len(rows))
         archive_path = cache_archive(number, root, workers=4, split='test')
         with tarfile.open(archive_path, mode='r|', bufsize=1024 * 1024) as archive:
@@ -57,7 +74,7 @@ def collect(root, pipeline, per_split):
                     continue
                 key = Path(member.name).stem
                 label = labels.get(key)
-                if label is None or 'neon:' + key in pipeline.index._paths:
+                if label is None or key in excluded_ids or 'neon:' + key in pipeline.index._paths:
                     continue
                 split = 'calibration' if label['Usage'] == 'Public' else 'test' if label['Usage'] == 'Private' else None
                 correct_ids = [int(value) for value in label['landmarks'].split()]
@@ -90,6 +107,7 @@ def collect(root, pipeline, per_split):
                     status(root, 'collecting_official_test_images', archive=number, collected=len(rows))
                 if all(sum(r['split'] == split for r in rows) >= per_split for split in ['calibration', 'test']):
                     break
+        save(checkpoint, {'rows': rows, 'seen': seen, 'excluded': excluded, 'next_archive': number + 1})
         archive_path.unlink()
         if len(rows) >= 2 * per_split:
             break
@@ -108,8 +126,8 @@ def evaluate(root, pipeline, rows):
     for start in range(0, len(pending), 16):
         batch = pending[start:start + 16]
         vectors = pipeline.embedder.embed([root / r['image_path'] for r in batch])
-        for row, vector in zip(batch, vectors):
-            prediction = pipeline.index.predict(vector, top_k=5)
+        predictions = pipeline.index.predict_batch(vectors, top_k=5)
+        for row, prediction in zip(batch, predictions):
             decision = pipeline.recognition_policy.evaluate(prediction)
             results.append({**row, 'candidate_landmark_id': prediction['landmark_id'],
                             'correct': prediction['landmark_id'] in row['landmark_ids'],
@@ -127,9 +145,10 @@ def summarize(rows, model):
     displayed = [r for r in accepted if model['score_range'][0] <= r['match_score'] <= model['score_range'][1]]
     supported = [r for r in rows if r['known_to_index']]
     unknown = [r for r in rows if not r['known_to_index']]
-    return {'all_candidates': metrics(probabilities, outcomes),
+    conditional = model.get('population') == 'accepted_predictions'
+    return {'all_candidates': None if conditional else metrics(probabilities, outcomes),
             'raw_matching_score_as_probability': metrics([r['match_score'] for r in rows], outcomes),
-            'constant_baseline': metrics([model['correct_count'] / model['sample_count']] * len(rows), outcomes),
+            'constant_baseline': metrics([model['correct_count'] / model['sample_count']] * len(accepted), [r['correct'] for r in accepted]) if conditional and accepted else metrics([model['correct_count'] / model['sample_count']] * len(rows), outcomes),
             'acceptance_rate': len(accepted) / len(rows), 'accepted_count': len(accepted),
             'displayed_probability_count': len(displayed),
             'displayed_probability_metrics': metrics([probability(model, r['match_score']) for r in displayed], [r['correct'] for r in displayed]) if displayed else None,
@@ -147,7 +166,9 @@ def main():
     parser.add_argument('output', type=Path)
     parser.add_argument('--model', default='dinov2-small')
     parser.add_argument('--device', default='cuda')
-    parser.add_argument('--per-split', type=int, default=1000)
+    parser.add_argument('--per-split', type=int, default=400)
+    parser.add_argument('--exclude-test-manifest', type=Path, nargs='*', default=[])
+    parser.add_argument('--population', choices=['all_candidates', 'accepted_predictions'], default='accepted_predictions')
     args = parser.parse_args()
     if args.per_split < 100 or args.per_split % 2:
         parser.error('Use an even number of at least 100 examples per split')
@@ -158,21 +179,37 @@ def main():
     status(root, 'loading_full_index')
     pipeline = LandmarkPipeline.load(args.index, args.model, args.device)
     pipeline.calibrator = None
+    pipeline.embedder.preprocess_workers = 4
     signature = index_signature(pipeline.index)
     configuration = {'index_signature': signature, 'recognition_policy': asdict(pipeline.recognition_policy),
-                     'per_split': args.per_split, 'sampling': 'Half covered-landmark queries and half unsupported/non-landmark queries in each split', 'top_k': 5, 'dataset': 'GLDv2 recognition_solution_v2.1',
+                     'per_split': args.per_split, 'population': args.population, 'excluded_test_manifest_hashes': [hashlib.sha256(p.read_bytes()).hexdigest() for p in args.exclude_test_manifest], 'sampling': 'Half covered-landmark queries and half unsupported/non-landmark queries in each split', 'top_k': 5, 'dataset': 'GLDv2 recognition_solution_v2.1',
                      'split_rule': 'Public for calibration; Private for evaluation. Selection does not use model outcomes.'}
     config_path = root / 'configuration.json'
     if config_path.exists() and json.loads(config_path.read_text(encoding='utf-8')) != configuration:
         raise ValueError('Experiment configuration changed; use a fresh output directory')
     save(config_path, configuration)
-    rows = collect(root, pipeline, args.per_split)
+    rows = collect(root, pipeline, args.per_split, args.exclude_test_manifest)
     results = evaluate(root, pipeline, rows)
-    calibration = [r for r in results if r['split'] == 'calibration']
+    calibration = [r for r in results if r['split'] == 'calibration' and (args.population == 'all_candidates' or r['accepted'])]
     test = [r for r in results if r['split'] == 'test']
-    model = fit([r['match_score'] for r in calibration], [r['correct'] for r in calibration])
+    try:
+        model = fit([r['match_score'] for r in calibration], [r['correct'] for r in calibration])
+    except ValueError as error:
+        accepted = [r for r in test if r['accepted']]
+        unsupported = [r for r in test if not r['known_to_index']]
+        report = {**configuration, 'calibration_samples': len(calibration), 'test_samples': len(test),
+                  'calibration_correct': sum(r['correct'] for r in calibration),
+                  'calibration_incorrect': sum(not r['correct'] for r in calibration),
+                  'calibration_fit_error': str(error), 'installed_in_runtime': False,
+                  'test': {'accepted_count': len(accepted), 'acceptance_rate': len(accepted) / len(test),
+                           'accepted_accuracy': sum(r['correct'] for r in accepted) / len(accepted) if accepted else None,
+                           'unsupported_queries': len(unsupported),
+                           'unsupported_false_acceptance_rate': sum(r['accepted'] for r in unsupported) / len(unsupported) if unsupported else None}}
+        save(root / 'evaluation.json', report)
+        status(root, 'evaluation_complete_insufficient_calibration', reason=str(error))
+        return
     model.update(index_signature=signature, top_k=5, recognition_policy=asdict(pipeline.recognition_policy),
-                 dataset=configuration['dataset'], calibration_image_hashes=[r['sha256'] for r in calibration])
+                 dataset=configuration['dataset'], population=args.population, deployment_status='not_approved', calibration_image_hashes=[r['sha256'] for r in calibration])
     save(root / 'calibration-candidate.json', model)
     report = {**configuration, 'calibration_samples': len(calibration), 'test_samples': len(test),
               'calibration_correct': sum(r['correct'] for r in calibration), 'calibration_incorrect': sum(not r['correct'] for r in calibration),

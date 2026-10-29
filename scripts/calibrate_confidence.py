@@ -31,7 +31,7 @@ def audit_images(reference_paths, calibration_manifest, test_manifest):
     for manifest, split in ((calibration_manifest, "calibration"), (test_manifest, "test")):
         rows = json.loads(manifest.read_text(encoding="utf-8"))
         if not isinstance(rows, list) or len(rows) < 20:
-            raise ValueError(f"{split}: use at least 20 labeled photoss")
+            raise ValueError(f"{split}: use at least 20 labeled photos")
         records = []
         for row in rows:
             group = row.get("group_id")
@@ -82,11 +82,13 @@ def main():
         parser.error("Choose a new output directory and positive top-k")
     pipeline = LandmarkPipeline.load(args.index, args.model)
     pipeline.calibrator = None
+    if any(not Path(row.image_path).is_file() for row in pipeline.index.references):
+        parser.error('This legacy experiment requires local reference photos. For a Neon-ID index, use scripts/calibrate_full_index.py or scripts/evaluate_uploads.py.')
     calibration_rows, test_rows = audit_images(
         [Path(row.image_path) for row in pipeline.index.references], args.calibration_manifest, args.test_manifest)
     calibration_results = evaluate_rows(pipeline, calibration_rows, args.top_k)
     model = fit([r["match_score"] for r in calibration_results], [r["correct"] for r in calibration_results])
-    model.update(index_signature=index_signature(pipeline.index), top_k=args.top_k,
+    model.update(index_signature=index_signature(pipeline.index), top_k=args.top_k, deployment_status='not_approved',
                  calibration_image_hashes=[r["sha256"] for r in calibration_results],
                  calibration_manifest_sha256=hashlib.sha256(args.calibration_manifest.read_bytes()).hexdigest())
     test_results = evaluate_rows(pipeline, test_rows, args.top_k)
@@ -103,12 +105,12 @@ def main():
               "calibrated_probability": metrics([r["confidence_probability"] for r in test_results], outcomes),
               "constant_calibration_accuracy_baseline": metrics([model["correct_count"] / model["sample_count"]] * len(test_results), outcomes),
               "calibration_results": calibration_results, "test_results": test_results,
-              "limitations": "Minimum sample checks aren't accurate"}
+              "limitations": "All-candidate local-reference benchmark; minimum sample checks do not establish reliable confidence for accepted frontend uploads."}
     args.output.mkdir(parents=True)
     (args.output / "calibration.json").write_text(json.dumps(model, indent=2), encoding="utf-8")
     (args.output / "evaluation.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
     print(json.dumps(report["calibrated_probability"], indent=2))
-    print("Review independent evaluation before copying calibration.json into the index directory.")
+    print("Evaluation candidate only; deployment approval and representative validation are still required.")
 
 
 if __name__ == "__main__":
