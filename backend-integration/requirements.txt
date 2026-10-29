@@ -5,3 +5,13 @@ psycopg2-binary==2.9.10
 python-dotenv==1.1.0
 python-multipart==0.0.20
 Pillow==11.2.1
+httpx[socks]==0.28.1
+
+# Used only when IMAGE_STORAGE=s3.
+boto3>=1.35,<2
+
+# Real landmark recognition (CPU works without an NVIDIA GPU).
+torch>=2.2,<3
+transformers==4.57.6
+numpy>=1.26,<3
+faiss-cpu==1.12.0

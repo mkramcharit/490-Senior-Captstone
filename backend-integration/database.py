@@ -22,7 +22,7 @@ def check_database_connection():
 
 
 def get_landmark(landmark_id: int):
-    """Returns one row for the requested landmark_id from training_data."""
+    """Returns the same first row for a landmark while its database rows are unchanged."""
     with engine.connect() as connection:
         result = connection.execute(
             text(
@@ -40,6 +40,9 @@ def get_landmark(landmark_id: int):
                     country
                 FROM training_data
                 WHERE landmark_id = :landmark_id
+                -- A landmark has multiple photo rows. Choose by a stable ID
+                -- so separate uploads do not select an arbitrary database row.
+                ORDER BY id ASC NULLS LAST
                 LIMIT 1
                 """
             ),
@@ -50,7 +53,7 @@ def get_landmark(landmark_id: int):
 
 
 def get_landmark_photos(landmark_id: int, limit: int = 5):
-    """Returns multiple unique image URLs for the same landmark."""
+    """Returns unique Neon image URLs in a consistent order for this landmark."""
     with engine.connect() as connection:
         results = connection.execute(
             text(
@@ -60,6 +63,8 @@ def get_landmark_photos(landmark_id: int, limit: int = 5):
                 WHERE landmark_id = :landmark_id
                   AND url IS NOT NULL
                   AND TRIM(url) <> ''
+                -- DISTINCT URLs also need an order before applying the limit.
+                ORDER BY url ASC
                 LIMIT :limit
                 """
             ),

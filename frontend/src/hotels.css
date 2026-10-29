@@ -1,0 +1,113 @@
+/* Hotel search styles are scoped to this section of the existing Trip Canvas. */
+.hotel-results { margin: 32px 0; padding: 28px; border: 1px solid rgba(255,255,255,.12); border-radius: 22px; background: linear-gradient(135deg,rgba(255,255,255,.035),rgba(255,255,255,.01)); }
+.hotel-results__head { display:flex; justify-content:space-between; align-items:center; gap:24px; }
+.hotel-results__eyebrow { font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#91d4ff; }
+.hotel-results__head h3 { font-size:28px; line-height:1.2; letter-spacing:-.04em; margin:9px 0; }
+.hotel-results__head p { font-size:13px; color:#aab8ca; line-height:1.6; margin:0; }
+.hotel-results__radius { display:grid; gap:7px; color:#b5c4d4; font-size:11px; flex-shrink:0; }
+.hotel-results__radius select { color:#eff5fc; background:#162132; border:1px solid #ffffff20; border-radius:10px; padding:10px; font:inherit; }
+.hotel-results__tools { display:flex; align-items:center; justify-content:space-between; gap:16px; margin:22px 0; }
+.hotel-results__tools>span { font-size:11px; color:#8c9db2; }
+.hotel-results__filter { display:flex; align-items:center; gap:8px; padding:0 12px; border:1px solid #ffffff1c; border-radius:12px; color:#97b0c7; }
+.hotel-results__filter input { color:#eef5ff; background:none; border:0; font:inherit; font-size:12px; padding:12px 0; width:220px; min-width:0; }
+.hotel-results__grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+.hotel-result-card { display:flex; flex-direction:column; padding:20px; min-width:0; border:1px solid #ffffff15; border-radius:16px; background:#07111b80; transition:border-color .2s,transform .2s; }
+.hotel-result-card:hover { border-color:#91d4ff55; transform:translateY(-2px); }
+.hotel-result-card__top { display:flex; justify-content:space-between; align-items:center; gap:10px; font-size:10px; color:#a5bdd2; }
+.hotel-result-card__icon { display:grid; place-items:center; height:40px; width:40px; background:#8bd7ff0e; border:1px solid #8bd7ff1c; border-radius:12px; color:#a4dfff; }
+.hotel-result-card h4 { margin:16px 0 8px; font-size:16px; line-height:1.4; overflow-wrap:anywhere; }
+.hotel-result-card p { font-size:11px; line-height:1.7; color:#aab8c9; margin:0 0 14px; }
+.hotel-result-card small { font-size:10px; color:#9cacbf; margin-top:auto; line-height:1.6; }
+.hotel-result-card__links { display:flex; flex-wrap:wrap; gap:15px; margin-top:17px; }
+.hotel-result-card__links a { display:inline-flex; align-items:center; gap:4px; color:#a8dcff; font-size:11px; }
+.hotel-results__message { display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:14px; padding:32px 18px; min-height:170px; border:1px dashed #ffffff1c; border-radius:16px; color:#a9bbce; }
+.hotel-results__message>svg { color:#95c8e4; }
+.hotel-results__message p { margin:0; max-width:650px; font-size:13px; line-height:1.7; }
+.hotel-results__attribution { color:#8596ac; font-size:10px; line-height:1.8; margin:20px 0 0; }
+.hotel-results__attribution a { color:#a2b8cc; }
+.hotel-results__skeleton { height:200px; border-radius:16px; background:linear-gradient(90deg,#ffffff03,#ffffff0b,#ffffff03); background-size:200%; animation:hotel-shimmer 1.5s infinite; }
+.hotel-results__sr-only { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
+.hotel-results :is(button,a,input,select):focus-visible { outline:2px solid #a4dfff; outline-offset:3px; }
+/* Actual hotel lists require vertical room beyond the original compact mockup. */
+#planner:has(.hotel-results) { height:auto!important; max-height:none!important; overflow:visible!important; }
+@keyframes hotel-shimmer { to { background-position:-200% 0; } }
+@media(max-width:900px) { .hotel-results__grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:560px) {
+  .hotel-results { padding:18px; }
+  .hotel-results__head { align-items:flex-start; gap:12px; }
+  .hotel-results__head h3 { font-size:23px; }
+  .hotel-results__grid { grid-template-columns:1fr; }
+  .hotel-results__tools { flex-wrap:wrap; }
+  .hotel-results__filter { width:100%; }
+  .hotel-results__filter input { width:100%; }
+}
+@media(prefers-reduced-motion:reduce) { .hotel-results__skeleton { animation:none; } .hotel-result-card { transition:none; } }
+
+.hotels-future-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+@media(max-width:640px) { .hotels-future-grid { grid-template-columns:1fr; } }
+
+/* Restore the recognized-landmark layout on branches missing these styles. */
+#planner .recognized-trip-hero { position:relative; isolation:isolate; display:flex; align-items:flex-end; min-height:340px; margin:26px 0; overflow:hidden; border-radius:24px; background:#152637; border:1px solid #ffffff1f; }
+#planner .recognized-trip-hero__image { position:absolute; inset:0; z-index:-2; width:100%; height:100%; object-fit:cover; }
+#planner .recognized-trip-hero::after { content:''; position:absolute; inset:0; z-index:-1; background:linear-gradient(90deg,#07111bee,#07111b70 65%,#07111b20); }
+#planner .recognized-trip-hero__copy { padding:32px; max-width:650px; }
+#planner .recognized-trip-hero__copy>span,
+#planner .destination-profile__head>div>span,
+#planner .trip-section-heading>div>span,
+#planner .planning-next-head>div>span { color:#9ddaff; text-transform:uppercase; font-size:11px; letter-spacing:.12em; }
+#planner .recognized-trip-hero h3 { margin:12px 0; font-size:clamp(28px,3.4vw,46px); line-height:1.1; }
+#planner .recognized-trip-hero p { display:flex; align-items:center; gap:8px; color:#d5e0ed; line-height:1.6; }
+#planner .recognized-trip-confidence { display:inline-flex; padding:8px 12px; border-radius:999px; color:#cbf4e4; background:#164b4080; border:1px solid #81d8b83b; font-size:12px; }
+#planner .destination-profile { padding:26px; border:1px solid #ffffff1c; background:#ffffff04; border-radius:20px; margin:24px 0; }
+#planner .destination-profile__head { display:flex; justify-content:space-between; align-items:center; gap:20px; margin-bottom:22px; }
+#planner .destination-profile h3,
+#planner .trip-section-heading h3,
+#planner .planning-next-head h3 { margin:8px 0 0; font-size:24px; line-height:1.3; }
+#planner .destination-profile__actions { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+#planner .profile-explore-button { display:inline-flex; gap:8px; align-items:center; padding:11px 14px; border:1px solid #9ddaff3b; border-radius:12px; background:#9ddaff0c; color:#d8efff; font:inherit; font-size:12px; cursor:pointer; }
+#planner .profile-source { font-size:11px; color:#9baec4; }
+#planner .destination-profile__grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+#planner .profile-field { display:flex; flex-direction:column; gap:9px; padding:16px; border-radius:12px; background:#07111b60; min-width:0; }
+#planner .profile-field>span { color:#9fb1c5; font-size:11px; }
+#planner .profile-field>strong { font-size:14px; line-height:1.5; overflow-wrap:anywhere; }
+#planner .trip-section-heading,
+#planner .planning-next-head { display:flex; align-items:flex-end; justify-content:space-between; gap:24px; margin:28px 0 18px; }
+#planner .trip-section-heading>p,
+#planner .planning-next-head>p { max-width:420px; margin:0; color:#aab8c9; font-size:12px; line-height:1.7; }
+#planner .landmark-gallery-grid,
+#planner .nearby-landmarks-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; }
+#planner .landmark-gallery-image { min-height:200px; border-radius:16px; background-size:cover; background-position:center; background-color:#152637; border:1px solid #ffffff1a; }
+#planner .nearby-landmark-card { border-radius:16px; overflow:hidden; border:1px solid #ffffff1a; background:#0a162280; }
+#planner .nearby-landmark-card__image { height:190px; display:flex; align-items:flex-end; background-size:cover; background-position:center; padding:14px; }
+#planner .nearby-landmark-card__image>span { background:#07111bbf; border-radius:8px; padding:7px 10px; font-size:11px; }
+#planner .nearby-landmark-card__copy { display:flex; flex-direction:column; gap:8px; padding:18px; }
+#planner .nearby-landmark-card__copy>span { color:#9fb1c5; font-size:12px; line-height:1.6; }
+#planner .trip-card--future { position:relative; isolation:isolate; min-height:210px; overflow:hidden; padding:0; border-radius:18px; }
+#planner .future-card-image { position:absolute; inset:0; z-index:-1; background-size:cover; background-position:center; opacity:.5; }
+#planner .future-card-copy { display:flex; flex-direction:column; align-items:flex-start; gap:10px; padding:24px; }
+#planner .future-card-copy>span { color:#c1d2e5; font-size:10px; text-transform:uppercase; letter-spacing:.12em; }
+#planner .future-card-copy>strong { font-size:19px; line-height:1.35; }
+#planner .future-card-copy>small { color:#bdcbdc; font-size:12px; line-height:1.7; }
+/* Actual provider photos; missing media gets an explicit, intentional fallback. */
+.hotel-result-card { overflow:hidden; }
+.hotel-result-card__photo { position:relative; height:165px; margin:-20px -20px 18px; background:#122235; }
+.hotel-result-card__photo>img { display:block; width:100%; height:100%; object-fit:cover; }
+.hotel-result-card__photo-fallback { height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; background:radial-gradient(ellipse at 50% 10%,#234665,#101c2c 80%); color:#95bddb; }
+.hotel-result-card__photo-fallback>span { font-size:11px; }
+.hotel-result-card__photo>a { position:absolute; right:8px; bottom:8px; color:white; background:#07111bbf; padding:5px 8px; border-radius:6px; font-size:10px; }
+@media(max-width:900px) {
+  #planner .destination-profile__head, #planner .trip-section-heading, #planner .planning-next-head { align-items:flex-start; flex-direction:column; gap:14px; }
+  #planner .destination-profile__grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media(max-width:640px) {
+  #planner .recognized-trip-hero { min-height:290px; }
+  #planner .recognized-trip-hero__copy { padding:24px; }
+  #planner .destination-profile { padding:18px; }
+  #planner .landmark-gallery-grid, #planner .nearby-landmarks-grid { grid-template-columns:1fr; }
+  #planner .landmark-gallery-image { min-height:230px; }
+}
+
+/* Keep the original photographer, source and license visible beside each photo. */
+.hotel-photo-credit { display:flex; flex-wrap:wrap; gap:4px 8px; margin:-5px 0 16px; color:#9fb1c5; font-size:10px; line-height:1.6; overflow-wrap:anywhere; }
+.hotel-photo-credit a { color:#b6dcf5; text-decoration:underline; }
+.hotel-photo-credit>span:last-child { flex-basis:100%; }

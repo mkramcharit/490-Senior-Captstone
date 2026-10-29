@@ -4,29 +4,28 @@
 /*
 TREKMARK FRONT END - main.jsx
 
-This file holds the bulk of all React functionality within the current
+This file contains the majority of React functionality for the present
 Trekmark prototype.
 
-The purpose of this prototype is:
+The objective of the prototype is:
 
-1. Allow the user to find a destination by either clicking on a location
-   on the globe or by uploading an image.
-2. Show a preview card of the chosen destination.
-3. Enable the user to enter a more detailed “Trip Canvas” with sample
-   data for flight, hotel, food, attractions, pricing, and itinerary.
-4. Keep the interface very visual to provide a travel product experience
-   instead of a technical capstone/research project.
-
+1. Enable a user to find a destination either by selecting a destination
+   from a globe, or by uploading an image.
+2. Show a preview card for a destination.
+3. Allow user to fill out a more specific "Trip Canvas" with an example of
+   flight, hotel, food, activities, pricing and itinerary for a destination.
+4. Keep the design highly visual and provide a travel product experience,
+   rather than a technical capstone/research project.
 */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
-// React 18+ uses createRoot to mount the app to index.html
+// React 18+ uses createRoot to attach the app to index.html
 import { createRoot } from 'react-dom/client';
 
 
-// Framer Motion is used for smooth transitions when sliding and fading in/out.
-// AnimatePresence is useful for removing elements as CSS has limited support
-// for animating elements after removal by React.
+// Framer Motion is used for smooth transitions on fade in/out and sliding.
+// AnimatePresence is helpful when removing elements because CSS has very little
+// support for animating elements after they are removed by React.
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ArrowRight,
@@ -45,108 +44,145 @@ import {
 } from 'lucide-react';
 
 
-// All styling, responsiveness, globe styling, background animation,
-// fixed navigation and Trip Canvas layout is defined here.
+// Styling, responsive design, globe styling, background animation, fixed
+// navigation bar and Trip Canvas layout are all defined here.
 import './styles.css';
+import HotelResults from './HotelResults.jsx';
+import RestaurantResults from './RestaurantResults.jsx';
+import AirportResults from './AirportResults.jsx';
+import { destinationFromResponse, presetIdFor } from './destinationData.js';
+import { AccountProvider, AccountNav, SaveItinerary, ItineraryPlan, apiErrorMessage } from './AccountPanel.jsx';
 import AdminPage from './AdminPage.jsx';
 
 
-// FastAPI runs separately from the Vite frontend during development.
-// All landmark recognition requests are sent to this address.
-const API_BASE_URL = 'http://127.0.0.1:8000';
+// Recognized landmark photos come exclusively from the Neon-backed prediction
+// response. If the first database image fails, try another database image.
+// Wikimedia photos belong only to HotelResults and are never read here.
+function NeonLandmarkImage({ destination }) {
+  const sources = useMemo(() => [...new Set([
+    destination.hero, ...(destination.galleryImages || []),
+  ].filter(image => typeof image === 'string' && image.trim()))],
+    [destination.hero, destination.galleryImages]);
+  const [index, setIndex] = useState(0);
+  useEffect(() => setIndex(0), [sources]);
+  if (!sources[index]) return null;
+  return <img className="recognized-trip-hero__image" src={sources[index]}
+    alt={destination.name} onError={() => setIndex(current => current + 1)}/>;
+}
+
+
+// Keep anchor targets below the fixed header, including at mobile widths.
+function scrollToTripSection(id) {
+  const target = document.getElementById(id);
+  if (!target) return;
+  if (id === 'trip-itinerary') {
+    const editor = target.querySelector('details');
+    if (editor) editor.open = true;
+  }
+  target.focus({ preventScroll: true });
+  target.scrollIntoView({
+    behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+    block: 'start',
+  });
+}
+
+function TripNavigationStyles() {
+  return <style>{`
+    :root { --trekmark-header-height: 72px; }
+    #planner, .trip-anchor { scroll-margin-top: calc(var(--trekmark-header-height) + 24px); }
+    .trip-anchor:focus, #planner:focus { outline: none; }
+    .trip-jump { display:flex; align-items:center; flex-wrap:wrap; gap:10px; padding:18px 20px; margin:0 0 24px; border:1px solid #ffffff26; border-radius:20px; background:linear-gradient(120deg,#23394de6,#222337e6); }
+    .trip-jump__intro { flex:1 1 210px; }
+    .trip-jump__intro strong { display:block; color:#f3f8ff; font-size:16px; }
+    .trip-jump__intro span { display:block; margin-top:5px; color:#b9c8da; font-size:13px; line-height:1.5; }
+    .trip-jump button, .trip-next { display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:12px 16px; border:1px solid #97c9ff45; border-radius:999px; background:#ffffff09; color:#e8f4ff; font:inherit; font-size:14px; cursor:pointer; transition:background .2s; }
+    .trip-jump button:hover, .trip-next:hover { background:#8bc8ff25; }
+    .trip-jump button:focus-visible, .trip-next:focus-visible { outline:2px solid #8bc8ff; outline-offset:4px; }
+    .destination-profile .destination-profile__actions { flex-direction:row; flex-wrap:wrap; align-items:center; gap:12px; }
+    .trip-save-inline { min-width:0; max-width:100%; }
+    #planner .trip-save-inline .save-itinerary { display:flex; padding:0; margin:0; border:0; border-radius:0; background:none; box-shadow:none; gap:0; }
+    #planner .trip-save-inline .save-itinerary > div,
+    #planner .trip-save-inline .save-itinerary > small { display:none; }
+    #planner .trip-save-inline .save-itinerary > button { max-width:100%; min-height:44px; white-space:normal; }
+    .trip-stop { margin-top:28px; }
+    .trip-next { margin:18px 0 4px; }
+    .trip-finish { margin-top:32px; padding-top:24px; border-top:1px solid #ffffff26; }
+    .trip-finish h3 { margin:0 0 8px; font-size:24px; letter-spacing:-.02em; }
+    .trip-finish > p { margin:0 0 18px; color:#b9c8da; line-height:1.6; }
+    @media(max-width:640px) {
+      .trip-jump { padding:16px; gap:8px; }
+      .trip-jump__intro { flex-basis:100%; margin-bottom:6px; }
+      .trip-jump button { flex:1 1 calc(50% - 8px); font-size:13px; padding:12px 10px; }
+      #planner .save-itinerary { flex-wrap:wrap; gap:14px; }
+      #planner .save-itinerary > div { flex:1 1 100%; }
+    }
+    @media(prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } }
+  `}</style>;
+}
+
+// In dev the FastAPI server is running independently of the Vite frontend.
+// All landmark recognition requests are sent to this server.
+// Keep local API cookies on the same host as the Vite page (localhost or 127.0.0.1).
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || `http://${window.location.hostname}:8000`;
 
 
 /*
 PRESET GLOBE DESTINATIONS
 
-These are the five destinations currently on the globe.
+There are currently 5 destinations on the globe.
 
-Each object has the following properties:
+Each of these has the following properties:
 
 - id: React internal id
-- name/country: rendered in UI
-- lat/lng: actual lat/lng for map pin
+- name/country: displayed in UI
+- lat/lng: the real lat/lng to use for a map pin
 - kicker: short promotional copy
-- confidence: fake confidence level for recognition (only for prototype)
-- hero / experienceImage / stayImage / eatImage: individual images so the
-  Trip Canvas doesn't reuse the same image
-- hotel / restaurant / attraction: sample travel options
-- stayPrice / eatPrice / doPrice / flight: sample prices
+- confidence: provided only by recognition; featured selections have none
+- hero / experienceImage / stayImage / eatImage: individual images for use in
+  the Trip Canvas (so that the Trip Canvas does not reuse an image)
+- hotel / restaurant / attraction: example of these three types of experiences
+- stayPrice / eatPrice / doPrice / flight: examples of the price for each type
+  of experience
 
-Once the backend exists, a large amount of this data will come from the API
-instead of being hardcoded here.
+Once the backend exists, the majority of this data will be provided by the API
+rather than hardcoded in this file.
 
-Having all the preset destinations in one array makes the rest of
-the page a lot easier to work with. Rather than hard coding Orlando, Tokyo, Paris,
-etc. in five different places, React can loop over the same data and use it in multiple
-places. This is much cleaner and should make integration to the backend even less
-painful as we can replace mock data with API data.
+Having this list of pre-defined destinations in one place makes the rest of the
+frontend much easier to use. Rather than hardcoding Orlando, Tokyo, Paris, etc.,
+in 5 different places, React can loop over this data and use it in multiple
+places. This is cleaner and should also make integration with the backend easier.
+We can replace the mock data with API data.
 */
 const destinations = [
   {
     id: 'orlando', name: 'Orlando', country: 'Florida, USA', lat: 28.5383, lng: -81.3792,
-    kicker: 'Theme parks · sunshine · easy escapes', confidence: 98,
+    kicker: 'Theme parks · sunshine · easy escapes',
     hero: 'https://images.unsplash.com/photo-1533107862482-0e6974b06ec4?auto=format&fit=crop&w=1600&q=90',
-    experienceImage: 'https://images.unsplash.com/photo-1500916434205-0c77489c6cf7?auto=format&fit=crop&w=1400&q=90',
-    stayImage: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=1200&q=90',
-    eatImage: 'https://images.unsplash.com/photo-1552566626-52f8b828add9?auto=format&fit=crop&w=1200&q=90',
     summary: 'An energy-packed escape built around immersive lands, headline rides, resort nights and easy weekend momentum.',
-    hotel: 'Universal Helios Grand Hotel', stayPrice: '$349 / night',
-    restaurant: 'The Ravenous Pig', eatPrice: '$28 avg meal',
-    attraction: 'Epic Universe', doPrice: '$159 ticket',
-    flight: '$146 round trip'
   },
   {
     id: 'tokyo', name: 'Tokyo', country: 'Japan', lat: 35.6762, lng: 139.6503,
-    kicker: 'Neon nights · ramen · quiet temples', confidence: 99,
+    kicker: 'Neon nights · ramen · quiet temples',
     hero: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&w=1600&q=90',
-    experienceImage: 'https://images.unsplash.com/photo-1528360983277-13d401cdc186?auto=format&fit=crop&w=1400&q=90',
-    stayImage: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=90',
-    eatImage: 'https://images.unsplash.com/photo-1559339352-11d035aa65de?auto=format&fit=crop&w=1200&q=90',
     summary: 'A city that can feel futuristic, traditional, electric and calm in the same afternoon.',
-    hotel: 'Shinjuku Granbell', stayPrice: '$214 / night',
-    restaurant: 'Sushi Tokyo Ten', eatPrice: '$35 avg meal',
-    attraction: 'Senso-ji', doPrice: '$12 local transit + entry area',
-    flight: '$842 round trip'
   },
   {
     id: 'paris', name: 'Paris', country: 'France', lat: 48.8566, lng: 2.3522,
-    kicker: 'Art · cafés · iconic streets', confidence: 97,
+    kicker: 'Art · cafés · iconic streets',
     hero: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=1600&q=90',
-    experienceImage: 'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?auto=format&fit=crop&w=1400&q=90',
-    stayImage: 'https://images.unsplash.com/photo-1445019980597-93fa8acb246c?auto=format&fit=crop&w=1200&q=90',
-    eatImage: 'https://images.unsplash.com/photo-1559329007-40df8a9345d8?auto=format&fit=crop&w=1200&q=90',
     summary: 'Landmarks you already know, neighborhoods you do not, and a city built for wandering slowly.',
-    hotel: 'Hôtel Dame des Arts', stayPrice: '$298 / night',
-    restaurant: 'Bouillon République', eatPrice: '$42 avg meal',
-    attraction: 'Eiffel Tower', doPrice: '$31 ticket',
-    flight: '$612 round trip'
   },
   {
-    id: 'amazon', name: 'Amazon Rainforest', country: 'Brazil', lat: -3.4653, lng: -62.2159,
-    kicker: 'Wildlife · rivers · immersive nature', confidence: 94,
+    id: 'amazon', name: 'Amazon gateway · Manaus', country: 'Brazil', lat: -3.13, lng: -60.02,
+    kicker: 'Wildlife · rivers · immersive nature',
     hero: 'https://images.unsplash.com/photo-1516026672322-bc52d61a55d5?auto=format&fit=crop&w=1600&q=90',
-    experienceImage: 'https://images.unsplash.com/photo-1465379944081-7f47de8d74ac?auto=format&fit=crop&w=1400&q=90',
-    stayImage: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1200&q=90',
-    eatImage: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=1200&q=90',
     summary: 'A deeper kind of trip—river routes, layered green horizons and wildlife beyond the city grid.',
-    hotel: 'Juma Amazon Lodge', stayPrice: '$420 / night',
-    restaurant: 'Floating River Kitchen', eatPrice: '$24 avg meal',
-    attraction: 'Rio Negro Expedition', doPrice: '$95 excursion',
-    flight: '$718 round trip'
   },
   {
     id: 'rio', name: 'Rio de Janeiro', country: 'Brazil', lat: -22.9068, lng: -43.1729,
-    kicker: 'Beaches · mountains · nightlife', confidence: 96,
+    kicker: 'Beaches · mountains · nightlife',
     hero: 'https://images.unsplash.com/photo-1483729558449-99ef09a8c325?auto=format&fit=crop&w=1600&q=90',
-    experienceImage: 'https://images.unsplash.com/photo-1606141923451-000827e3c16e?auto=format&fit=crop&w=1600&q=90',
-    stayImage: 'https://images.unsplash.com/photo-1522798514-97ceb8c4f1c8?auto=format&fit=crop&w=1200&q=90',
-    eatImage: 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=1200&q=90',
     summary: 'Oceanfront energy, dramatic peaks and a city that feels cinematic from almost every angle.',
-    hotel: 'Arena Copacabana', stayPrice: '$226 / night',
-    restaurant: 'Aprazível', eatPrice: '$30 avg meal',
-    attraction: 'Christ the Redeemer', doPrice: '$18 ticket',
-    flight: '$684 round trip'
   }
 ];
 
@@ -154,37 +190,30 @@ const destinations = [
 /*
 ROTATING DESTINATION GALLERY
 
-The large full width image carousel found lower on the page.
+This is the large horizontal image gallery found lower in the application.
 
-There are five globe presets but some gallery items have their own custom
-"trip" object. This enables a user to click "Plan this trip" on a gallery item and use
-the same Trip Canvas as used in the globe.
+There are 5 pre-defined destinations on the globe but some of the gallery images
+have a "trip" object associated with them. This allows the user to select
+"Plan this trip" on one of these images and use the same Trip Canvas that is
+used for the globe.
 
-For Tokyo and the Amazon we reuse an existing destination object via
+For Tokyo and the Amazon, we reuse an existing destination object using
 destinations.find(...). No duplicate data is created.
 
-The gallery is structured similarly to the globe using data.
-Some items have their own trip object, while others reuse an existing
-destination using .find(). Again, reusing an object here avoids copying
-duplicate data across the entire file. Things would quickly become messy
-if we copy/paste data everywhere.
+The gallery is set up similarly to the globe using data. Some items have their
+own trip object while others reuse an existing destination using .find().
+Again, reusing an object here prevents copying data across the page. If we were
+to copy/paste data across the page it would quickly get messy.
 */
 const gallery = [
   {
     title: 'New York after dark',
     image: 'https://images.unsplash.com/photo-1485871981521-5b1fd3805eee?auto=format&fit=crop&w=1800&q=90',
     trip: {
-      id: 'new-york', name: 'New York City', country: 'New York, USA',
-      kicker: 'Skyline · neighborhoods · late nights', confidence: 99,
+      id: 'new-york', lat:40.7128, lng:-74.006, name: 'New York City', country: 'New York, USA',
+      kicker: 'Skyline · neighborhoods · late nights',
       hero: 'https://images.unsplash.com/photo-1485871981521-5b1fd3805eee?auto=format&fit=crop&w=1800&q=90',
-      experienceImage: 'https://images.unsplash.com/photo-1479839672679-a46483c0e7c8?auto=format&fit=crop&w=1400&q=90',
-      stayImage: 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=1200&q=90',
-      eatImage: 'https://images.unsplash.com/photo-1552566626-52f8b828add9?auto=format&fit=crop&w=1200&q=90',
       summary: 'Iconic skyline views, neighborhood energy and more to do than a single weekend can hold.',
-      hotel: 'Arlo Midtown', stayPrice: '$312 / night',
-      restaurant: 'Ci Siamo', eatPrice: '$45 avg meal',
-      attraction: 'Top of the Rock', doPrice: '$44 ticket',
-      flight: '$188 round trip'
     }
   },
   {
@@ -196,17 +225,10 @@ const gallery = [
     title: 'The Great Wall',
     image: 'https://images.unsplash.com/photo-1508804185872-d7badad00f7d?auto=format&fit=crop&w=1800&q=90',
     trip: {
-      id: 'great-wall', name: 'The Great Wall', country: 'Beijing, China',
-      kicker: 'History · mountain views · day trips', confidence: 98,
+      id: 'great-wall', lat:40.4319, lng:116.5704, name: 'The Great Wall', country: 'Beijing, China',
+      kicker: 'History · mountain views · day trips',
       hero: 'https://images.unsplash.com/photo-1508804185872-d7badad00f7d?auto=format&fit=crop&w=1800&q=90',
-      experienceImage: 'https://images.unsplash.com/photo-1578271887552-5ac3a72752bc?auto=format&fit=crop&w=1400&q=90',
-      stayImage: 'https://images.unsplash.com/photo-1455587734955-081b22074882?auto=format&fit=crop&w=1200&q=90',
-      eatImage: 'https://images.unsplash.com/photo-1526318896980-cf78c088247c?auto=format&fit=crop&w=1200&q=90',
       summary: 'A landmark-scale trip combining Beijing culture with one of the world’s most recognizable landscapes.',
-      hotel: 'The Orchid Beijing', stayPrice: '$168 / night',
-      restaurant: 'TRB Hutong', eatPrice: '$36 avg meal',
-      attraction: 'Mutianyu Great Wall', doPrice: '$9 ticket',
-      flight: '$936 round trip'
     }
   },
   {
@@ -218,17 +240,10 @@ const gallery = [
     title: 'Amalfi light',
     image: 'https://images.unsplash.com/photo-1533104816931-20fa691ff6ca?auto=format&fit=crop&w=1800&q=90',
     trip: {
-      id: 'amalfi', name: 'Amalfi Coast', country: 'Campania, Italy',
-      kicker: 'Cliffside towns · sea views · slow days', confidence: 97,
+      id: 'amalfi', lat:40.634, lng:14.6027, name: 'Amalfi Coast', country: 'Campania, Italy',
+      kicker: 'Cliffside towns · sea views · slow days',
       hero: 'https://images.unsplash.com/photo-1533104816931-20fa691ff6ca?auto=format&fit=crop&w=1800&q=90',
-      experienceImage: 'https://images.unsplash.com/photo-1500375592092-40eb2168fd21?auto=format&fit=crop&w=1400&q=90',
-      stayImage: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1200&q=90',
-      eatImage: 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=1200&q=90',
       summary: 'A coastal escape built around dramatic views, small towns, long lunches and time near the water.',
-      hotel: 'Hotel Marina Riviera', stayPrice: '$410 / night',
-      restaurant: 'Da Gemma', eatPrice: '$55 avg meal',
-      attraction: 'Path of the Gods', doPrice: '$0 trail access',
-      flight: '$704 round trip'
     }
   },
 ];
@@ -237,16 +252,16 @@ const gallery = [
 /*
 BACKGROUND PARTICLES
 
-These are the small glowing particles in the background.
+These are the small animated particles in the background.
 
-The position, size, delay and duration of each particle is randomized once.
-useMemo is used here to avoid the particles jumping to new random
-positions every time the page is re-rendered by React.
+Each of these has a random position, size, delay and duration. One randomization
+happens at initialization. useMemo is used here so that the particles do not
+jump to new random positions when the page re-renders because of React.
 
-This is mostly visual polish, but it does go a long way towards making the
-page feel dynamic rather than entirely static in the mockup. We keep the
-effect fairly lightweight since there's no benefit in cooking the GPU
-for small background dots.
+This is mostly visual and does go a long way towards providing a dynamic page
+instead of a completely static mock-up. The animation is kept lightweight since
+there is no real benefit to cooking the GPU for a small number of animated
+background particles.
 */
 function ParticleField() {
   const particles = useMemo(() => Array.from({ length: 34 }, (_, i) => ({
@@ -260,74 +275,73 @@ function ParticleField() {
 /*
 LIGHTWEIGHT "GLOBE" COMPONENT
 
-The current implementation of the globe is performance optimized.
+The current implementation of the globe is optimized for performance.
 
-Rather than warping a high-resolution texture repeatedly in JavaScript,
-we instead shift copies of a real world map texture within a circular
-container horizontally. The location dots are drawn INSIDE the same
-map texture. Since both the map and the location dots are moving together,
-the dots stay in their correct geographic positions.
+Rather than warping a high resolution map texture in JavaScript multiple times,
+we instead are shifting copies of a real world map texture inside of a circular
+view. The location pins are drawn inside of the same map texture. Because both
+the map and location pins are moving together, the pins will always be in the
+correct geographic location.
 
-This gives us:
+This allows for:
 
-- A rotating earth-like globe
-- Accurate placement of continents
-- Markers that adhere to the map
-- Much lower latency compared to our canvas-warp implementations
+- A rotating globe that looks like earth
+- Correctly positioned continents
+- Pins that stay in the correct location on the map
+- Much lower latency than our previous canvas warping implementations.
 
 Props:
 
-- selected: the currently selected location
-- onSelect: called when a marker is clicked
+- selected: currently selected location
+- onSelect: called on click of a location pin
 
-The globe appears a bit complex, but the actual concept is actually quite
-simple. A map with its markers all flow within a circular view. This eliminates
-the issue of marker drift and provides the appearance of a rotating Earth
-without the overhead of a much heavier full 3D globe library.
+The globe is somewhat complex, but the concept behind it is relatively simple.
+A map and all of the location pins can flow inside a circular view. This prevents
+any pin from drifting and allows for a rotating Earth while not requiring a much
+heavier 3D globe library.
 */
 function CanvasGlobe({ selected, onSelect }) {
   
-  // Reference to the visible circular viewing "window" that crops the map.
+  // Reference to the circular view that crops the map.
   const viewportRef = useRef(null);
 
   
   
-  // We create several copies of the world map in order to be able to loop the map
-  // infinitely, without leaving whitespace on the left or right sides.
+  // Several copies of the entire world map are created so that the map can loop
+  // infinitely without whitespace at either end.
   const worldRefs = useRef([]);
 
   
   
-  // Current longitude/rotation value. Instead of state, we use refs because this
-  // gets updated every animation frame and SHOULD NOT cause React re-renders.
+  // Current longitude/rotation value. Instead of using state, we use refs because
+  // this gets updated every animation frame and should not trigger a React re-render.
   const rotationRef = useRef(-28);
 
   
   
-  // The longitude we smoothly rotate toward if a destination is clicked.
+  // The longitude we smoothy rotate to after a destination is selected.
   const targetRotationRef = useRef(null);
 
   
   
-  // Pauses automatic rotation for a short time when a destination is focused. This
-  // gives the user time to look at their focused destination.
+  // Slows automatic rotation for a short time after a destination is selected.
+  // This gives the user time to check out the selected destination.
   const pauseUntilRef = useRef(0);
 
   
-  // Stores requestAnimationFrame to be cancelled later during cleanup.
+  // Stores requestAnimationFrame to be cancelled later on in the cleanup.
   const rafRef = useRef(null);
 
   
   
-  // Used for calculating the time that has elapsed since the last frame. This
-  // enables smooth animation across 60 Hz, 120 Hz and 144 Hz displays.
+  // Used to calculate how long has passed since the last animation frame.
+  // This allows the animation to be smooth on 60 Hz, 120 Hz and 144 Hz displays.
   const lastTimeRef = useRef(performance.now());
 
   
   
-  // To select a new location, have the globe animate to rotate to the
-  // longitude of the new location, then stop the automatic rotation for
-  // 2.6 seconds.
+  // To select a destination cause the globe to rotate to the longitude of the new
+  // destination and pause the automatic rotation for 2.6 seconds.
   useEffect(() => {
     if (!selected) return;
     targetRotationRef.current = selected.lng;
@@ -337,9 +351,8 @@ function CanvasGlobe({ selected, onSelect }) {
   
   
   
-  // Animation loop for the globe.
-  // Runs once when the globe is mounted and removes itself when the
-  // component is removed.
+  // The animation loop used for the globe.
+  // Runs once on initialization of the globe and is removed when the component is removed.
   useEffect(() => {
     const viewport = viewportRef.current;
     if (!viewport) return;
@@ -361,14 +374,14 @@ function CanvasGlobe({ selected, onSelect }) {
         rotationRef.current = (rotationRef.current + dt * .0048) % 360;
       }
 
-      // 560 is a fallback value if the browser has not completed measuring
-      // the globe yet. This prevents the first animation frame from performing
-      // strange calculations while the layout is still settling.
+      // 560 is a fallback in case the browser has not completed measuring the globe yet.
+      // This prevents the first animation frame from doing some odd calculations while
+      // the layout is still settling.
       const viewportWidth = viewport.clientWidth || 560;
       const worldWidth = viewportWidth * 2;
 
       
-      // Center the currently/selected longitude in the circular view.
+      // Center the current/selected longitude in the circular view.
       const normalizedRotation =
         ((rotationRef.current + 180) % 360 + 360) % 360;
 
@@ -381,14 +394,13 @@ function CanvasGlobe({ selected, onSelect }) {
       
       
       
-      // The markers are INSIDE each world.
-      // The world and markers are translated together as one object,
-      // meaning the labels will always be in the correct geographic
-      // location.
+      // The pins are inside the world maps.
+      // The world map and pins are translated together so that the labels remain in
+      // their correct geolocation.
       //
-      // Each copy of a world receives the same translation value. This is what
-      // allows the repeating texture to appear as a single globe rather than
-      // three separate worlds moving independently.
+      // Each copy of the world map has the same value for translation. This is what
+      // makes the looping texture appear as one globe instead of three separate
+      // copies of the world moving independently.
       worldRefs.current.forEach((world) => {
         if (world) {
           world.style.transform = `translate3d(${translateX}px,0,0)`;
@@ -407,8 +419,8 @@ function CanvasGlobe({ selected, onSelect }) {
 
   
   
-  // A function that creates one instance of the world texture and all
-  // destination markers. Three instances are created for horizontal looping.
+  // A function that creates a copy of a world map along with all of the destination
+  // pins. Three copies are created to allow for infinite looping.
   const renderWorldCopy = (copyKey, leftPercent, refIndex) => (
     <div
       key={copyKey}
@@ -427,21 +439,18 @@ function CanvasGlobe({ selected, onSelect }) {
         
         
         
-        // Takes latitude and longitude and converts them to percentages
-        // on an equirectangular world map.
+        // Converts a lat/lng location to a percentage on an equirectangular Earth.
         //
-        // Longitude:
-        // -180 degrees = far left, +180 degrees = far right.
+        // Longitude: -180 is left and +180 is right
         //
-        // Latitude:
-        // +90 degrees = top (North Pole), -90 degrees = bottom.
+        // Latitude: +90 is top (North Pole) and -90 is bottom
         const x = ((d.lng + 180) / 360) * 100;
         const y = ((90 - d.lat) / 180) * 100;
 
         return (
           <button
             key={`${copyKey}-${d.id}`}
-            className={`locked-marker ${selected?.id === d.id ? 'active' : ''}`}
+            className={`locked-marker ${selected?.id === d.id || selected?.presetId === d.id ? 'active' : ''}`}
             style={{ left: `${x}%`, top: `${y}%` }}
             onClick={() => onSelect(d)}
             aria-label={`Select ${d.name}`}
@@ -474,54 +483,100 @@ function CanvasGlobe({ selected, onSelect }) {
 
 
 /*
-MAIN TREKMARK APPLICATION
-
-App() creates the main user visible elements and assembles all
-sections of the page. Most of the app is currently a single page
-application. As the user moves through the app, links cause changes
-in React state instead of transitioning to entirely new HTML pages.
-
-App() is essentially in charge of managing the page state. It tracks data such
-as which destination is selected, whether the Trip Canvas is visible, which
-gallery slide is currently displayed and whether the fake AI image scanning
-screen is currently visible.
+  MAIN TREKMARK APP
+  
+  App() creates the elements of the currently visible page, and organizes them
+  together into the page. Most of the app is currently a single page app. As a
+  user progresses through the app, clicking on links will update the React
+  state instead of transitioning to a new HTML page.
+  
+  App() is currently in charge of the page state. Currently tracks the currently
+  selected destination, whether the detailed Trekmark Trip Canvas is visible, the
+  currently uploaded image (temporary url), whether the AI image processing
+  page is visible, and which image is currently displayed in the rotating image
+  gallery.
 */
 function App() {
   
   
-  // Hidden input used for file input. Utilised by various buttons in the app to
-  // let the user select a file using the user's default file picker.
+  // Hidden input for image uploads. Used by multiple buttons across the app to let
+  // the user select an image via the user's default file selection.
   const fileRef = useRef();
 
   
-  // Currently selected destination. If null then no destination has been selected.
+  // Currently selected destination. If this is null then no destination is selected
+  // currently.
   const [selected, setSelected] = useState(null);
+  const [featuredLoading, setFeaturedLoading] = useState(false);
+  const [featuredError, setFeaturedError] = useState('');
+  const featuredRequest = useRef(null);
+  const selectionVersion = useRef(0);
+  useEffect(() => () => featuredRequest.current?.abort(), []);
 
   
-  // Boolean used to show or hide the detailed Trekmark Trip Canvas
+  // Boolean for showing/hiding detailed Trekmark Trip Canvas
   const [detailOpen, setDetailOpen] = useState(false);
 
   
-  // Temporary URL for the uploaded image stored locally
+  // Temporary url for the currently uploaded image
   const [uploadPreview, setUploadPreview] = useState(null);
 
   
-  // Boolean used to show or hide the fake AI image scanning screen
+  // Boolean for showing/hiding the AI image processing page
   const [analyzing, setAnalyzing] = useState(false);
 
   
-  // Current image in large rotating image display
+  // Currently displayed image in rotating image gallery
   const [galleryIndex, setGalleryIndex] = useState(0);
 
-  // Tracks the user-facing landmark submission form.
+  // Currently used form for submitting a Trekmark landmark.
   const [submissionStatus, setSubmissionStatus] = useState('');
   const [submissionImageUrl, setSubmissionImageUrl] = useState('');
+  const [submissionImageFile, setSubmissionImageFile] = useState(null);
+  const [submissionError, setSubmissionError] = useState('');
+  useEffect(() => {
+    if (!submissionImageFile) { setSubmissionImageUrl(''); return; }
+    const url = URL.createObjectURL(submissionImageFile);
+    setSubmissionImageUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [submissionImageFile]);
+
+  // Use the fixed header size instead of the desktop height.
+  useEffect(() => {
+    const header = document.querySelector('.nav-fixed');
+    const measure = () => document.documentElement.style.setProperty(
+      '--trekmark-header-height', `${header?.getBoundingClientRect().height || 72}px`
+    );
+    measure();
+    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null;
+    if (header) observer?.observe(header);
+    window.addEventListener('resize', measure);
+    return () => { observer?.disconnect(); window.removeEventListener('resize', measure); };
+  }, []);
+
+  // Wait for the React planner to mount. When opacity only changes, the scroll
+  // position is maintained while the component animates in. When notes are edited
+  // this does not happen.
+  useEffect(() => {
+    if (!detailOpen || !selected) return;
+    const timer = window.setTimeout(() => scrollToTripSection('planner'), 80);
+    return () => window.clearTimeout(timer);
+  }, [detailOpen, selected?.id]);
+
+  const openSavedTrip = (destination) => {
+    const presetId = presetIdFor(destination);
+    if (presetId) { loadFeatured({ id: presetId }, true, destination); return; }
+    selectionVersion.current += 1; featuredRequest.current?.abort();
+    setFeaturedLoading(false); setFeaturedError('');
+    setAnalyzing(false); setSelected(destination); setDetailOpen(true);
+
+  };
 
   
   
   
-  // Advances cinematic destination gallery every 5.2 sec.
-  // Will cancel interval when component is destroyed via cleanup function.
+  // Rotates the cinematic gallery of destinations every 5.2 seconds.
+  // Clean up interval on component unmount.
   useEffect(() => {
     const t = setInterval(
       () => setGalleryIndex(i => (i + 1) % gallery.length),
@@ -533,31 +588,44 @@ function App() {
   
   
   
-  // Called when one of the globe markers are clicked. Selects the
-  // destination, closes any existing planner and scrolls down to the
-  // destination preview card.
+  // Called when a destination from the globe is clicked on. Selects that destination,
+  // hides any current planner, and scrolls down to the destination preview card.
   //
-  // We use the short timeout to give React time to render the new
-  // destination card before we scroll to it. Otherwise, we can sometimes
-  // scroll too early and end up in an awkward position. This is lowkey annoying.
-  const focusDestination = (d) => {
-    setSelected(d);
-    setDetailOpen(false);
+  // We use a timeout to allow React time to render the new destination preview card
+  // before we scroll to it. Sometimes we scroll too early and end up in an awkward
+  // position. This is lowkey annoying.
+  const loadFeatured = async (destination, openPlanner = false, saved = null) => {
+    const version = ++selectionVersion.current;
+    featuredRequest.current?.abort();
+    const controller = new AbortController(); featuredRequest.current = controller;
+    setSelected(null); setDetailOpen(false); setAnalyzing(false); setFeaturedLoading(true); setFeaturedError('');
+    setTimeout(() => document.querySelector('#discover')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/featured/${encodeURIComponent(destination.id)}`, { signal: controller.signal });
+      const data = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(apiErrorMessage(data, 'This destination could not be loaded.'));
+      const result = destinationFromResponse(data);
+      if (controller.signal.aborted || selectionVersion.current !== version) return;
+      setSelected(saved?.itinerary ? { ...result, itinerary: saved.itinerary } : result);
+      setDetailOpen(openPlanner);
 
-    window.setTimeout(() => {
-      document.querySelector('#discover')?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center'
-      });
-    }, 500);
+    } catch (error) {
+      if (!controller.signal.aborted && selectionVersion.current === version) setFeaturedError(error instanceof TypeError ? 'Cannot reach the destination service. Check that the backend is running.' : error.message);
+    } finally {
+      if (selectionVersion.current === version) setFeaturedLoading(false);
+    }
   };
+  const focusDestination = destination => loadFeatured(destination);
 
   
   
-  // Unselects the selected destination, hides the destination preview
-  // card and returns the user to the state of discovering the globe.
+  // Unselects the currently selected destination, hides the destination preview
+  // card and returns the user to the globe.
   const clearDestination = () => {
+    selectionVersion.current += 1; featuredRequest.current?.abort();
+    setFeaturedLoading(false); setFeaturedError('');
     setSelected(null);
+    setAnalyzing(false);
     setDetailOpen(false);
     window.setTimeout(() => {
       document.querySelector('#top')?.scrollIntoView({
@@ -569,91 +637,41 @@ function App() {
 
   
   
-  // Opens the Trip Canvas for the image in the currently viewed cinematic
-  // gallery. Now the gallery serves a purpose and is not purely decorative.
+  // Opens the Trip Canvas for the currently displayed destination from the cinematic
+  // gallery of destinations. This gives purpose to the gallery and is not purely
+  // decorative.
   const planGalleryTrip = () => {
     const trip = gallery[galleryIndex]?.trip;
-    if (!trip) return;
-    setSelected(trip);
-    setDetailOpen(true);
-    window.setTimeout(() => {
-      document.querySelector('#planner')?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start'
-      });
-    }, 120);
+    if (trip) loadFeatured(trip, true);
   };
 
   
   
   
-  // Add the four prototype images to the Trip Canvas.
-  // Use individual image inputs rather than repeating the same
-  // image since it would be uninteresting to a travel planner.
-  //
-  // Creating this array up front results in a lot cleaner JSX below. Rather than
-  // manually creating four nearly-identical image components, we define the data
-  // once and have .map() handle the repetition for us.
-  const plannerVisuals = selected ? [
-    {
-      kind: 'Destination view',
-      title: selected.name,
-      image: selected.hero,
-      className: 'planner-visual planner-visual--hero'
-    },
-    {
-      kind: 'Stay',
-      title: selected.hotel,
-      image: selected.stayImage || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=90',
-      className: 'planner-visual'
-    },
-    {
-      kind: 'Eat',
-      title: selected.restaurant,
-      image: selected.eatImage || 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1200&q=90',
-      className: 'planner-visual'
-    },
-    {
-      kind: 'Experience',
-      title: selected.attraction,
-      image: selected.experienceImage || selected.hero,
-      className: 'planner-visual planner-visual--wide'
-    }
-  ] : [];
-
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
   // Image upload flow.
   //
-  // The old prototype paused for 1.8 seconds and always selected Paris.
-  // This version sends the selected image to the FastAPI /api/predict endpoint.
+  // The old app would always select Paris after a 1.8 second delay.
+  // This app sends the selected image to the FastAPI /api/predict route.
   //
   // Current flow:
   //
-  // 1. Read selected image file.
-  // 2. Generate a local preview for the scanning screen.
-  // 3. Add the image to FormData.
-  // 4. Send the image to FastAPI.
-  // 5. FastAPI validates the image and returns a landmark id and confidence.
-  // 6. FastAPI retrieves the matching landmark information from Neon.
-  // 7. Convert the backend response into the same destination format already
-  //    used throughout the frontend.
-  // 8. Show the returned destination on the page.
+  // 1. Read selected image file
+  // 2. Create a preview for the scanning component
+  // 3. Add image to FormData
+  // 4. Send image to FastAPI
+  // 5. FastAPI validates image and returns a landmark id and confidence
+  // 6. FastAPI gets corresponding landmark info from Neon
+  // 7. Convert returned data into same destination object format used throughout the
+  //    app
+  // 8. Display the returned destination on the page
   //
-  // For the 60% checkpoint, only the ML recognition result is simulated.
-  // The image upload, FastAPI request, Neon lookup and React state update are live.
+  // When not in demo mode on the backend, recognition uses DINOv2 + FAISS.
+  // The image upload, FastAPI request, Neon lookup and React state update are all live.
   const onUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const version = ++selectionVersion.current;
+    featuredRequest.current?.abort(); setFeaturedLoading(false); setFeaturedError('');
 
     const previewUrl = URL.createObjectURL(file);
 
@@ -664,8 +682,8 @@ function App() {
     const formData = new FormData();
     formData.append('file', file);
 
-    // Keep the scanning animation visible long enough for the user to see it.
-    // The backend request still starts immediately, but the result will not be
+    // Allow the scanning animation to stay visible until the user can see it.
+    // The FastAPI request will still start immediately, but the response won't be
     // displayed until at least 2.5 seconds have passed.
     const minimumScanTime = new Promise((resolve) => {
       setTimeout(resolve, 2500);
@@ -678,62 +696,17 @@ function App() {
       });
 
       await minimumScanTime;
+      if (selectionVersion.current !== version) return;
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
         throw new Error(
-          errorData?.detail || 'Trekmark could not identify this image.'
+          apiErrorMessage(errorData, 'Trekmark could not identify this image.')
         );
       }
 
       const data = await response.json();
-      const landmark = data.landmark;
-
-      // The current frontend already expects destination objects with fields such
-      // as name, country, lat, lng, hero and confidence. The backend response is
-      // converted here so the existing destination card and globe can reuse it.
-      const backendDestination = {
-        id: `landmark-${landmark.id}`,
-        landmarkId: landmark.id,
-        name: landmark.name,
-        city: landmark.city,
-        state: landmark.state,
-        countryName: landmark.country,
-        country: [
-          landmark.city,
-          landmark.state,
-          landmark.country
-        ].filter(Boolean).join(', '),
-        lat: landmark.latitude,
-        lng: landmark.longitude,
-        confidence: Math.round(data.confidence * 100),
-        hero: landmark.image || previewUrl,
-        categoryName: landmark.category_name
-          ? landmark.category_name
-              .replace('Category:', '')
-              .replaceAll('_', ' ')
-          : 'Recognized landmark',
-        kicker: landmark.category_name
-          ? landmark.category_name
-              .replace('Category:', '')
-              .replaceAll('_', ' ')
-          : 'Recognized landmark',
-        summary:
-          `Trekmark identified ${landmark.name} using the recognition pipeline and retrieved its location information from the live landmark database.`,
-        experienceImage: landmark.image || previewUrl,
-        stayImage: landmark.image || previewUrl,
-        eatImage: landmark.image || previewUrl,
-        hotel: 'Travel data coming next',
-        stayPrice: '$—',
-        restaurant: 'Restaurant data coming next',
-        eatPrice: '$—',
-        attraction: 'Nearby landmarks coming next',
-        doPrice: '$—',
-        flight: 'Flight data coming next',
-        recognitionMode: data.recognition_mode,
-        galleryImages: data.landmark_photos || [],
-        nearbyLandmarks: data.nearby_landmarks || [],
-      };
+      const backendDestination = destinationFromResponse(data);
 
       setSelected(backendDestination);
       setDetailOpen(false);
@@ -750,29 +723,36 @@ function App() {
         error.message || 'Trekmark could not process the uploaded image.'
       );
     } finally {
-      setAnalyzing(false);
+      if (selectionVersion.current === version) setAnalyzing(false);
 
-      // Resetting the input lets the user select the exact same image again.
+      // Allow the user to select the same image again after clearing the input.
       e.target.value = '';
     }
   };
 
   // User landmark submission flow.
   //
-  // The user can suggest a landmark for Trekmark by providing a landmark name,
-  // image URL and country. City, state, latitude and longitude are optional
-  // because not every landmark in the dataset has all of those values.
+  // Users can submit a Trekmark landmark by providing a name, an image and a country.
+  // City, state, latitude and longitude are optional because not all landmarks in
+  // the Trekmark dataset include this information.
   //
-  // The form is sent as multipart FormData so the backend can use the same
-  // request style later when direct image uploads are connected to S3.
+  // The form is submitted as multipart FormData in order to support both direct
+  // image uploads and the persistent image storage system.
   const submitLandmark = async (e) => {
     e.preventDefault();
 
-    // Store the form element before awaiting the backend response.
-    // React's event currentTarget should not be relied on after an await.
+    // Store the form before waiting for a response from the backend.
+    // React's event currentTarget should not be trusted after an await.
     const formElement = e.currentTarget;
     const form = new FormData(formElement);
 
+    if (submissionStatus === 'submitting') return;
+    setSubmissionError('');
+    if (!submissionImageFile || submissionImageFile.size > 10 * 1024 * 1024) {
+      setSubmissionError('Choose a JPG, PNG or WebP image smaller than 10 MB.');
+      return;
+    }
+    form.set('image', submissionImageFile);
     setSubmissionStatus('submitting');
 
     const optionalFields = ['city', 'state', 'lat', 'lon'];
@@ -792,22 +772,26 @@ function App() {
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
         throw new Error(
-          errorData?.detail || 'Trekmark could not submit this landmark.'
+          apiErrorMessage(errorData, 'Trekmark could not submit this landmark.')
         );
       }
 
       formElement.reset();
+      setSubmissionImageFile(null);
       setSubmissionImageUrl('');
       setSubmissionStatus('success');
     } catch (error) {
-      console.error('Landmark submission failed:', error);
-      setSubmissionStatus('error');
+      setSubmissionError(typeof error.message === 'string' ? error.message : 'The landmark could not be saved. Please try again.');
+      // Preserve the form, file, and preview so that the user can correct a field.
+      setSubmissionStatus('');
     }
   };
 
-  // Returns the submission section to a blank form so the user can add
-  // another landmark or retry after an unsuccessful submission.
+  // Returns the user submission form to a blank form so the user can either submit
+  // another landmark or try again after a failed submission.
   const resetSubmission = () => {
+    setSubmissionImageFile(null);
+    setSubmissionError('');
     setSubmissionImageUrl('');
     setSubmissionStatus('');
   };
@@ -820,32 +804,33 @@ function App() {
 }
       {/*
         FIXED NAVIGATION
-
-        Now stays fixed while scrolling so that the logo, "How it works", login and upload
-        all remain accessible throughout the page.
+        
+        Now stays fixed during the scroll so that the logo, "How it works", login and upload
+        are accessible throughout the app.
       */}
       <nav className="nav nav-fixed">
         <div className="nav-inner shell">
           <a className="brand" href="#top"><span className="brand-mark"><Compass size={16}/></span>Trekmark</a>
           <div className="nav-links">
             <a href="#how">How it works</a>
-            <button className="nav-login" onClick={() => { window.location.href = '/admin'; }}>Admin</button>
+            <AccountNav onOpenTrip={openSavedTrip}/>
             <button className="upload-mini" onClick={() => fileRef.current?.click()}><Camera size={15}/> Upload photo</button>
           </div>
         </div>
       </nav>
 
       <main>
+        <TripNavigationStyles/>
         {
 
 
 }
         {/*
           TRAVEL BACKGROUND
-
-          This section is purely decorative. The blend of sunsets, flight paths, moving
-          planes and particles give the page a travel/discovery feel. aria-hidden prevents
-          screen readers from interpreting this section as content.
+          
+          Decorative element. Combines flight paths, moving planes, sunsets and particles to
+          create the feel of travel and discovery. aria-hidden prevents screen readers from
+          treating this as content.
         */}
         <div className="travel-bg" aria-hidden="true">
           <div className="travel-bg__sunset" />
@@ -870,8 +855,8 @@ function App() {
 }
       {/*
         HERO / FIRST IMPRESSION
-
-        Main copy and interactive world.
+        
+        Main copy and interactive world
       */}
       <section className="hero shell" id="top">
         <motion.div className="hero-copy" initial={{opacity:0,y:28}} animate={{opacity:1,y:0}} transition={{duration:.8}}>
@@ -902,15 +887,17 @@ function App() {
 }
       {/*
         PREVIEW OF SELECTED DESTINATION
-
-        This is small by default until a destination is selected.
-        When a destination is selected, this becomes the large image
-        with buttons "Build this trip" and "See something else".
+        
+        Is currently small and only visible if a destination is selected. If a destination
+        is selected this is expanded into the large preview image with buttons "Build this
+        trip" and "See something else".
       */}
       <section className="selected-strip shell" id="discover">
-        {/* mode="wait" causes Framer Motion to remove the previous card completely
-            before animating the new one. This ensures a clean transition and avoids
-            both destination cards being visible for a brief moment. */}
+        {/*
+          mode="wait" in Framer Motion removes the previous card before animating in the new
+          card. This allows for a clean transition and ensures that both cards are not
+          visible for a brief moment.
+        */}
         <AnimatePresence mode="wait">
           {selected ? (
             <motion.div
@@ -925,22 +912,17 @@ function App() {
                 className="selected-image"
                 style={{backgroundImage:`linear-gradient(90deg,rgba(4,7,11,.88),rgba(4,7,11,.08)),url(${selected.hero})`}}
               />
-              <div className={`selected-copy ${selected.recognitionMode ? 'recognized-copy' : ''}`}>
-                {selected.recognitionMode ? (
-                  <>
+              <div className="selected-copy recognized-copy">
+                <>
                     {/*
-                      RECOGNIZED LANDMARK RESULT
-
-                      Uploaded images use this version of the destination card.
-                      It makes the recognition result, confidence, location and
-                      coordinates easy to see during the checkpoint demo.
-
-                      Preset globe destinations continue to use the original
-                      destination preview below.
+                      RECOGNIZED DESTINATION RESULT
+                      
+                      Selected images and suggested images all use the same Neon-backed destination
+                      card. Only actual predictions have a confidence value.
                     */}
                     <div className="recognition-label">
                       <span className="recognition-dot" />
-                      Recognized landmark
+                      {selected.source === 'featured' ? 'Featured landmark' : 'Recognized landmark'}
                     </div>
 
                     <h2>{selected.name}</h2>
@@ -951,8 +933,7 @@ function App() {
 
                     <div className="recognition-facts">
                       <div>
-                        <span>Match confidence</span>
-                        <strong>{selected.confidence}%</strong>
+                        {typeof selected.confidence === 'number' ? <><span title="Visual similarity to the closest reference image; not a verified probability of correctness.">Match confidence</span><strong>{selected.confidence}%</strong></> : <><span>Discover</span><strong>Featured pick</strong></>}
                       </div>
                       <div>
                         <span>Coordinates</span>
@@ -967,40 +948,16 @@ function App() {
                         className="primary compact"
                         onClick={() => {
                           setDetailOpen(true);
-                          setTimeout(() => document.querySelector('#planner')?.scrollIntoView({behavior:'smooth'}), 100);
+
                         }}
                       >
                         Build this trip <ArrowRight size={16}/>
                       </button>
                       <button className="ghost compact selected-reset" onClick={clearDestination}>
-                        Scan another photo
+                        {selected.source === 'featured' ? 'Explore another place' : 'Scan another photo'}
                       </button>
                     </div>
                   </>
-                ) : (
-                  <>
-                    <div className="destination-meta">
-                      <MapPin size={15}/> {selected.country}
-                      <span>{selected.confidence}% match confidence</span>
-                    </div>
-                    <h2>{selected.name}</h2>
-                    <p>{selected.kicker}</p>
-                    <div className="selected-actions">
-                      <button
-                        className="primary compact"
-                        onClick={() => {
-                          setDetailOpen(true);
-                          setTimeout(() => document.querySelector('#planner')?.scrollIntoView({behavior:'smooth'}), 100);
-                        }}
-                      >
-                        Build this trip <ArrowRight size={16}/>
-                      </button>
-                      <button className="ghost compact selected-reset" onClick={clearDestination}>
-                        See something else
-                      </button>
-                    </div>
-                  </>
-                )}
               </div>
             </motion.div>
           ) : (
@@ -1011,8 +968,8 @@ function App() {
               animate={{opacity:1}}
               exit={{opacity:0}}
             >
-              <span>Explore a preset destination</span>
-              <strong>Choose one of the glowing points above to preview the Trekmark experience.</strong>
+              <span>{featuredLoading ? 'Loading your destination' : featuredError ? 'Destination unavailable' : 'Explore a featured destination'}</span>
+              <strong role={featuredError ? 'alert' : 'status'}>{featuredError || (featuredLoading ? 'Finding the landmark, photos and location…' : 'Choose a point on the globe or a destination from the gallery.')}</strong>
             </motion.div>
           )}
         </AnimatePresence>
@@ -1024,9 +981,9 @@ function App() {
 }
       {/*
         CINEMATIC GALLERY OF DESTINATIONS
-
-        Travel photos are automatically rotated. Users can also
-        choose a travel photo and use it to plan a trip.
+        
+        Travel images are automatically rotated. Users can also select a travel image and
+        use that image to plan a trip.
       */}
       <section className="visual-story" aria-label="Destination gallery">
         <AnimatePresence mode="wait">
@@ -1048,9 +1005,9 @@ function App() {
 }
       {/*
         HOW TREKMARK HELPS
-
-        A brief marketing description of the Recognize -> Understand -> Go
-        pipeline. Not written like a research paper.
+        
+        Short marketing copy for the Recognize -> Understand -> Go process. Not written
+        as a research paper.
       */}
       <section className="promise shell" id="how">
         <div className="eyebrow">One photo. One starting point.</div>
@@ -1069,33 +1026,39 @@ function App() {
 }
       {/*
         TREKMARK TRIP CANVAS
-
-        Appears only when the user chooses to plan a trip.
-        This section enters and exits smoothly using AnimatePresence.
+        
+        Only appears when a user is planning a trip.
+        Smoother on/off animations using AnimatePresence.
       */}
       <AnimatePresence>
         {detailOpen && selected && (
-          <motion.section id="planner" className="planner shell" initial={{opacity:0,y:40}} animate={{opacity:1,y:0}} exit={{opacity:0,y:20}}>
-            {selected.recognitionMode ? (
-              <>
+          <motion.section id="planner" tabIndex={-1} aria-label="Your trip planner" className="planner shell" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
+            <nav className="trip-jump" aria-label="Trip sections">
+              <div className="trip-jump__intro"><strong>Your trip, all in one place</strong><span>Jump to your plan, airport, hotels or restaurants.</span></div>
+              <button type="button" onClick={() => scrollToTripSection('trip-itinerary')}><Compass size={16}/> Itinerary</button>
+              <button type="button" onClick={() => scrollToTripSection('trip-airport')}><Plane size={16}/> Airport</button>
+              <button type="button" onClick={() => scrollToTripSection('trip-hotels')}><Hotel size={16}/> Hotels</button>
+              <button type="button" onClick={() => scrollToTripSection('trip-restaurants')}><UtensilsCrossed size={16}/> Restaurants</button>
+            </nav>
+            <div id="trip-itinerary" className="trip-anchor" tabIndex={-1}>
+              <ItineraryPlan destination={selected} onChange={itinerary => setSelected(current => ({ ...current, itinerary }))}/>
+            </div>
+            <>
                 {/*
                   RECOGNIZED DESTINATION TRIP CANVAS
-
-                  The recognized landmark version of the Trip Canvas uses the
-                  location information returned from Neon instead of filling
-                  the page with fake travel recommendations.
-
-                  Flight, hotel, restaurant and nearby landmark cards remain
-                  visible so the user can see what Trekmark will add during
-                  the next integration phase.
+                  
+                  Trip Canvas for a recognized destination uses the destination information
+                  returned from Neon instead of filling the page with fake travel recommendations.
+                  
+                  Hotels are provided by Geoapify using the returned location.
+                  Restaurants also use the returned location. Flights are a placeholder.
                 */}
                 <div className="planner-head planner-head--recognized">
                   <div>
                     <div className="eyebrow">Trekmark trip canvas</div>
                     <h2>Build a trip around {selected.name}.</h2>
                     <p>
-                      Start with what Trekmark already knows about the landmark,
-                      then add live travel planning as those services are connected.
+                      {selected.presetId === 'amazon' ? 'Start your Amazon trip in Manaus, then explore nearby airports, places to stay and local restaurants.' : 'Make the plan yours, then explore nearby airports, places to stay and local restaurants.'}
                     </p>
                   </div>
                   <button className="icon-btn" onClick={()=>setDetailOpen(false)}><X/></button>
@@ -1103,25 +1066,22 @@ function App() {
 
                 <div
                   className="recognized-trip-hero"
-                  style={{
-                    backgroundImage:
-                      `linear-gradient(90deg, rgba(5,9,14,.88), rgba(5,9,14,.32)), url(${selected.hero})`
-                  }}
                 >
+                  <NeonLandmarkImage key={selected.id} destination={selected}/>
                   <div className="recognized-trip-hero__copy">
-                    <span>Recognized destination</span>
+                    <span>{selected.source === 'featured' ? 'Featured destination' : 'Recognized destination'}</span>
                     <h3>{selected.name}</h3>
                     <p><MapPin size={15}/> {selected.country}</p>
-                    <div className="recognized-trip-confidence">
+                    {typeof selected.confidence === 'number' && <div className="recognized-trip-confidence">
                       {selected.confidence}% match confidence
-                    </div>
+                    </div>}
                   </div>
                 </div>
 
                 {/*
-                  The Trip Canvas keeps the database details user-facing.
-                  City, state and country are shown when available, while
-                  internal identifiers and coordinates stay out of the UI.
+                  Trip Canvas keeps the database information user-facing.
+                  City, state and country are provided if available. Internal IDs and coordinates
+                  are not displayed.
                 */}
                 <div className="destination-profile">
                   <div className="destination-profile__head">
@@ -1135,20 +1095,16 @@ function App() {
                         className="profile-explore-button"
                         type="button"
                         onClick={() => {
-                          const nextSection = document.querySelector(
-                            '.landmark-gallery-section, .nearby-landmarks-section, .planning-next-head'
-                          );
-
-                          nextSection?.scrollIntoView({
-                            behavior: 'smooth',
-                            block: 'start'
-                          });
+                          scrollToTripSection('trip-hotels');
                         }}
                       >
                         <span>Explore what&apos;s nearby</span>
                         <ChevronDown size={17}/>
                       </button>
 
+                      <div className="trip-save-inline">
+                        <SaveItinerary destination={selected}/>
+                      </div>
                       <span className="profile-source">Landmark database</span>
                     </div>
                   </div>
@@ -1225,7 +1181,7 @@ function App() {
                                 `linear-gradient(180deg, rgba(5,9,14,.02), rgba(5,9,14,.58)), url(${landmark.image || selected.hero})`
                             }}
                           >
-                            <span>{Math.round(landmark.distance_km)} km away</span>
+                            <span>{(landmark.distance_km / 1.609344).toFixed(1)} miles away</span>
                           </div>
 
                           <div className="nearby-landmark-card__copy">
@@ -1248,12 +1204,11 @@ function App() {
                     <h3>Turn the landmark into a trip.</h3>
                   </div>
                   <p>
-                    These cards are already part of the Trekmark experience.
-                    Live travel providers will populate them during the next phase.
+                    Your nearest airport, local hotels and restaurants are ready to explore below.
                   </p>
                 </div>
 
-                <div className="trip-grid trip-grid--future trip-grid--future-three">
+                <div className="trip-grid trip-grid--future hotels-future-grid" style={{gridTemplateColumns: '1fr'}}>
                   <div className="trip-card trip-card--future">
                     <div
                       className="future-card-image future-card-image--flight"
@@ -1267,103 +1222,26 @@ function App() {
                     </div>
                   </div>
 
-                  <div className="trip-card trip-card--future">
-                    <div
-                      className="future-card-image future-card-image--stay"
-                      style={{ backgroundImage: `linear-gradient(180deg, rgba(5,9,14,.06), rgba(5,9,14,.7)), url(${selected.hero})` }}
-                    />
-                    <div className="future-card-copy">
-                      <Hotel/>
-                      <span>Stay</span>
-                      <strong>Hotels near {selected.name}</strong>
-                      <small>Future results will use the recognized landmark as the center of the stay search.</small>
-                    </div>
-                  </div>
 
-                  <div className="trip-card trip-card--future">
-                    <div
-                      className="future-card-image future-card-image--eat"
-                      style={{ backgroundImage: `linear-gradient(180deg, rgba(5,9,14,.06), rgba(5,9,14,.7)), url(${selected.hero})` }}
-                    />
-                    <div className="future-card-copy">
-                      <UtensilsCrossed/>
-                      <span>Eat</span>
-                      <strong>Dining around {selected.city || selected.name}</strong>
-                      <small>Nearby restaurants, ratings and pricing will populate this card later.</small>
-                    </div>
-                  </div>
                 </div>
               </>
-            ) : (
-              <>
-                <div className="planner-head">
-                  <div><div className="eyebrow">Trekmark trip canvas</div><h2>{selected.name}, in one glance.</h2><p>{selected.summary}</p></div>
-                  <button className="icon-btn" onClick={()=>setDetailOpen(false)}><X/></button>
-                </div>
-
-                {
-}
-                {/* Travel recommendations based on images. The hope is that
-                    the user can imagine themselves in the photo at the destination. */}
-                <div className="planner-media">
-                  {/* This section is DRY because of the use of .map(). Same
-                      structure, different content. If we ever add another image card,
-                      we can mostly just update the array above rather than manually
-                      typing out another section of JSX. */}
-                  {plannerVisuals.map((visual, index) => (
-                    <div
-                      key={`${visual.kind}-${index}`}
-                      className={visual.className}
-                      style={{ backgroundImage: `linear-gradient(180deg, rgba(6,10,16,.08), rgba(6,10,16,.78)), url(${visual.image})` }}
-                    >
-                      <div className="planner-visual__copy">
-                        <span>{visual.kind}</span>
-                        <strong>{visual.title}</strong>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {
-}
-                {/* Cards that give a short summary of the trip planning.
-                    Prices shown here are demo/placeholder until travel APIs are connected. */}
-                <div className="trip-grid">
-                  <div className="trip-card">
-                    <Plane/>
-                    <span>Flight snapshot</span>
-                    <strong>{selected.flight}</strong>
-                    <small>Sample fare · economy</small>
-                  </div>
-                  <div className="trip-card">
-                    <Hotel/>
-                    <span>Stay</span>
-                    <strong>{selected.hotel}</strong>
-                    <small>{selected.stayPrice || '$—'} · central location</small>
-                  </div>
-                  <div className="trip-card">
-                    <UtensilsCrossed/>
-                    <span>Eat</span>
-                    <strong>{selected.restaurant}</strong>
-                    <small>{selected.eatPrice || '$—'} · popular nearby choice</small>
-                  </div>
-                  <div className="trip-card">
-                    <Star/>
-                    <span>Do</span>
-                    <strong>{selected.attraction}</strong>
-                    <small>{selected.doPrice || '$—'} · must-see experience</small>
-                  </div>
-                </div>
-                {
-}
-                {/* A sample 3-day trip plan for the selected destination.
-                    Also demo data for the prototype. */}
-                <div className="itinerary">
-                  <div className="itinerary-title"><div><span>Suggested 3-day rhythm</span><h3>Enough structure. Still feels like a vacation.</h3></div><span className="ai-pill"><Sparkles size={14}/> AI assembled</span></div>
-                  {[['Day 1','Arrive + orient','Check in, walk the central district, then keep the first evening flexible.'],['Day 2','Signature day',`Start with ${selected.attraction}, leave room for a long lunch, then explore one nearby neighborhood.`],['Day 3','Local texture','Slow morning, one hidden-gem stop, then an easy route back toward departure.']].map(([d,t,b])=><div className="day" key={d}><span>{d}</span><div><strong>{t}</strong><p>{b}</p></div></div>)}
-                </div>
-              </>
-            )}
+            <section id="trip-airport" className="trip-anchor trip-stop" tabIndex={-1} aria-label="Closest airport">
+              <AirportResults key={`airport-${selected.id}`} destination={selected} apiBaseUrl={API_BASE_URL}/>
+              <button type="button" className="trip-next" onClick={() => scrollToTripSection('trip-hotels')}>Next: nearby hotels <ArrowRight size={16}/></button>
+            </section>
+            <section id="trip-hotels" className="trip-anchor trip-stop" tabIndex={-1} aria-label="Nearby hotels">
+              <HotelResults key={selected.id} destination={selected} apiBaseUrl={API_BASE_URL}/>
+              <button type="button" className="trip-next" onClick={() => scrollToTripSection('trip-restaurants')}>Next: local restaurants <ArrowRight size={16}/></button>
+            </section>
+            <section id="trip-restaurants" className="trip-anchor trip-stop" tabIndex={-1} aria-label="Local restaurants">
+              <RestaurantResults key={`restaurants-${selected.id}`} destination={selected} apiBaseUrl={API_BASE_URL}/>
+            </section>
+            <section className="trip-finish" aria-label="Save your finished itinerary">
+              <h3>A trip worth keeping.</h3>
+              <p>Save your itinerary, or head back to your plan to make it yours.</p>
+              <SaveItinerary destination={selected}/>
+              <button type="button" className="trip-next" onClick={() => scrollToTripSection('trip-itinerary')}>Back to your itinerary <ChevronDown size={16} style={{transform:'rotate(180deg)'}}/></button>
+            </section>
           </motion.section>
         )}
       </AnimatePresence>
@@ -1374,10 +1252,10 @@ function App() {
 }
       {/*
         COMMUNITY LANDMARK SUBMISSION
-
-        Users can suggest a landmark that is not already represented in Trekmark.
-        City, state, latitude and longitude are optional because those values are
-        not available for every landmark.
+        
+        Users can suggest a landmark that is not in Trekmark.
+        City, state, latitude and longitude are optional because not every landmark in
+        the Trekmark dataset has these fields.
       */}
       <section
         className={`submission-section shell ${
@@ -1429,7 +1307,7 @@ function App() {
               <p>
                 {submissionStatus === 'success'
                   ? 'Your landmark has been saved and can now be reviewed before it is added to Trekmark.'
-                  : 'Your information was not confirmed as saved. You can return to the form and try again.'}
+                  : submissionError || 'Your information was not confirmed as saved. You can return to the form and try again.'}
               </p>
             </div>
 
@@ -1450,7 +1328,7 @@ function App() {
               <div className="eyebrow">Help Trekmark grow</div>
               <h2>Know a landmark we should add?</h2>
               <p>
-                Send us the landmark and an image source. Your submission can be
+                Upload a photo and tell us where it is. Your submission will be
                 reviewed before it is added to Trekmark's landmark collection.
               </p>
 
@@ -1482,16 +1360,18 @@ function App() {
               </div>
 
               <div className="submission-field submission-field--wide">
-                <label htmlFor="submission-image-url">Image URL</label>
-                <input
-                  id="submission-image-url"
-                  name="image_url"
-                  type="url"
-                  placeholder="https://example.com/landmark.jpg"
-                  value={submissionImageUrl}
-                  onChange={(e) => setSubmissionImageUrl(e.target.value)}
-                  required
-                />
+                <label htmlFor="submission-image">Landmark photo</label>
+                <input id="submission-image" name="image" type="file" accept="image/jpeg,image/png,image/webp"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0] || null;
+                    setSubmissionError('');
+                    if (file && file.size > 10 * 1024 * 1024) {
+                      setSubmissionError('Choose an image smaller than 10 MB.'); event.target.value = ''; setSubmissionImageFile(null); return;
+                    }
+                    setSubmissionImageFile(file);
+                  }} required/>
+                <small>JPG, PNG or WebP · up to 10 MB</small>
+                {submissionError && <p role="alert" className="account-error">{submissionError}</p>}
               </div>
 
               <div className="submission-field">
@@ -1572,8 +1452,8 @@ function App() {
 }
       {/*
         FINAL CALL TO ACTION
-
-        Performs the upload action again for users that scroll to the bottom of the page.
+        
+        Repeats the upload action for users that scroll to the bottom of the page.
       */}
       <section className="final-cta shell">
         <div>
@@ -1587,7 +1467,9 @@ function App() {
       </section>
 
       {}
-      {/* Footer briefly describing the four main products offered by Trekmark. */}
+      {/*
+        Footer with a description of the 4 main products offered by Trekmark.
+      */}
       <footer className="shell"><span>Trekmark</span><span>Landmark recognition · confidence · regional exploration · trip planning</span></footer>
 
       <AnimatePresence>
@@ -1604,16 +1486,14 @@ function App() {
 }
 
 
-
-
-
+// Mount the entire Trekmark React app inside the <div id="root"></div> in index.html.
+// From this point on React will control the page.
+// index.html provides the root div. App() will be responsible for displaying
+// Trekmark in the browser.
+// Keep admin navigation separate from hotels and destination selection.
 function RootApp() {
-  return window.location.pathname.startsWith('/admin') ? <AdminPage /> : <App />;
+  const path = window.location.pathname;
+  return <AccountProvider apiBaseUrl={API_BASE_URL}>{path === '/admin' || path.startsWith('/admin/') ? <AdminPage /> : <App />}</AccountProvider>;
 }
 
-
-// Take the <div id="root"></div> from index.html and put the entire
-// Trekmark React app into it. From this point on React will handle the page.
-// index.html only provides an empty root element. The App() is what will
-// actually display Trekmark in the browser.
 createRoot(document.getElementById('root')).render(<RootApp />);

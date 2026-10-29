@@ -4,3 +4,20 @@ __pycache__/
 *.egg-info/
 artifacts/
 tmp/
+
+# Private configuration
+.env
+.env.*
+env.geoapify
+.env.geoapify
+
+# Local ML assets
+backend-integration/ml_assets/
+
+# Dependencies and generated files
+node_modules/
+.venv/
+.venv-mac/
+__pycache__/
+*.pyc
+dist/

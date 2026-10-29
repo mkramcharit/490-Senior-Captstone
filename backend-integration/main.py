@@ -5,48 +5,65 @@ TREKMARK BACKEND - main.py
 
 This is the FastAPI backend used by Trekmark.
 
-It sits between the React frontend, the image recognition system, and the Neon
+It sits between the React frontend, image recognition system and the Neon
 PostgreSQL database.
 
-For the 60% checkpoint, the data flow is:
+The flow for image recognition is:
 
 React uploads image
-        ↓
+↓
 FastAPI /api/predict
-        ↓
-Simulated ML image recognition
-        ↓
+↓
+DINOv2 embeddings + FAISS nearest-neighbor search
+↓
 landmark_id + confidence
-        ↓
+↓
 Query Neon database
-        ↓
+↓
 Landmark information
-        ↓
+↓
 Other photos of the same landmark
-        ↓
+↓
 Nearby landmarks
-        ↓
+↓
 JSON response to React app
 
-Only the ML image recognition is simulated here. The rest of the data flow is
-unchanged.
-
-Once the DINOv2 + FAISS recognition system is ready we will be able to replace
-the simulated landmark_id and confidence with the actual values. This will not
-require any change to either the backend or frontend data flow.
+Real image recognition uses the supplied DINOv2 model and FAISS index. Demo mode
+can be explicitly enabled for testing. Accounts, uploads, admin, airports, hotels
+and restaurants use the same routes in either mode.
 """
 
 import os
 import secrets
 import time
+import inspect
+import logging
+import math
 from io import BytesIO
+from pathlib import Path
 from typing import Optional
 
 from dotenv import load_dotenv
-from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, Request, UploadFile
+from starlette.concurrency import run_in_threadpool
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from PIL import Image
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
+
+# Backend settings are loaded before database.py creates its engine.
+load_dotenv(Path(__file__).resolve().with_name(".env.ml"))
+load_dotenv(Path(__file__).resolve().with_name(".env"))
+
+from hotels_service import get_hotels
+from restaurants_service import get_restaurants
+from airports_service import get_nearest_airport
+from ml_service import recognize_image, MLConfigurationError
+from featured_service import get_featured_destination, FeaturedUnavailable
+from category_format import format_category_name
+from accounts_api import router as accounts_router, allowed_origins, rate_limit, store_image, discard_image
+
 import database as database_module
 
 from database import (
@@ -62,18 +79,18 @@ from database import (
 #
 # Environmental variables are loaded from backend-integration/.env.
 #
-# DEMO_MODE is a flag that chooses whether to use simulated image recognition.
+# DEMO_MODE is a flag that chooses between using simulated image recognition.
 #
-# DEMO_LANDMARK_ID is the landmark_id returned during the simulated image
-# recognition process.
+# DEMO_LANDMARK_ID is the landmark_id returned during simulated image
+# recognition.
 #
-# DEMO_CONFIDENCE is the confidence value returned during the simulated image
-# recognition process.
+# DEMO_CONFIDENCE is the confidence returned during simulated image
+# recognition.
 #
-# These values are configured within the environmental variables in order to
-# make it possible to change the demo landmark without touching the python code.
+# These values are set in the environmental variables to allow changing the demo
+# landmark without modifying the python code.
 
-load_dotenv()
+# The .env file is loaded above before importing database.
 
 DEMO_MODE = os.getenv("DEMO_MODE", "true").lower() == "true"
 
@@ -88,9 +105,9 @@ DEMO_CONFIDENCE = float(
 
 # ADMIN AUTHENTICATION
 #
-# Admin credentials are kept in .env instead of inside source control.
-# The backend creates a short-lived in-memory session token after login.
-# Restarting FastAPI clears all admin sessions, which is acceptable for
+# Admin credentials are kept in .env and not in source control.
+# Backend creates a short-lived in-memory session token after login.
+# All admin sessions are cleared when FastAPI is restarted which is acceptable for
 # the current capstone prototype.
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
@@ -104,10 +121,10 @@ admin_sessions: dict[str, float] = {}
 
 # FASTAPI SETUP
 #
-# This code creates the FastAPI application used in Trekmark.
+# This code creates the FastAPI application used by Trekmark.
 #
-# In addition to the code the FastAPI documentation page at /docs will
-# automatically show the version, description and title of the FastAPI app.
+# FastAPI has auto-display of the title, description, and version of the FastAPI
+# app on its docs page at /docs.
 
 app = FastAPI(
     title="Trekmark API",
@@ -118,8 +135,8 @@ app = FastAPI(
 
 # CORS
 #
-# CORS is used to allow communication between the FastAPI backend and the React
-# app while they are running on different local ports.
+# CORS is used to allow communication between the React app and FastAPI when
+# they are running on different local ports.
 #
 # React typically runs on local port 5173.
 #
@@ -129,20 +146,37 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ],
+    allow_origins=allowed_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
+app.include_router(accounts_router)
+
+@app.exception_handler(RequestValidationError)
+async def readable_validation_error(request: Request, error: RequestValidationError):
+    # Return field names and messages, never raw passwords or uploaded bytes.
+    labels = {"image": "Landmark photo", "file": "Image file", "name": "Landmark name",
+              "country": "Country", "lat": "Latitude", "lon": "Longitude",
+              "email": "Email", "password": "Password", "username": "Username"}
+    errors = []
+    for item in error.errors():
+        location = item.get("loc", ())
+        field = str(location[-1]) if location else "request"
+        label = labels.get(field, field.replace("_", " ").capitalize())
+        message = "This field is required." if item.get("type") == "missing" else item.get("msg", "Check this value.")
+        errors.append({"field": field, "message": f"{label}: {message}"})
+    logging.getLogger("uvicorn.error").warning("Validation rejected %s: %s", request.url.path, " ".join(item["message"] for item in errors))
+    return JSONResponse(status_code=422, content={
+        "detail": " ".join(item["message"] for item in errors), "errors": errors})
+
+
 # ROOT ENDPOINT
 #
-# The root endpoint will just return a message that the Trekmark API is up and
-# running and will tell you if DEMO_MODE is enabled.
+# The root endpoint will just return a message indicating that the Trekmark API is
+# up and running and also indicate if DEMO_MODE is enabled.
 
 @app.get("/")
 def root():
@@ -155,7 +189,7 @@ def root():
 
 # HEALTH ENDPOINT
 #
-# The endpoint /api/health checks that both the FastAPI app is running and the
+# The endpoint /api/health checks that the FastAPI app is running and that the
 # Neon connection is working.
 #
 # The function check_database_connection makes a small query to the Neon database.
@@ -184,17 +218,17 @@ def health_check():
         )
 
 
-# DIRECT LANDMARK QUERY
+# DIRECT QUERY OF A LANDMARK
 #
-# There is an endpoint /api/landmark/{landmark_id} which allows for a direct
-# query of the landmark using its landmark_id.
+# There is an endpoint /api/landmark/{landmark_id} that allows for a direct query
+# of a landmark using its landmark_id.
 #
 # The function get_landmark() queries the training_data table in Neon.
 #
 # If the landmark is not found then FastAPI will return an HTTP 404 error.
 #
 # This endpoint can be used to test Neon database connectivity independently of
-# the image recognition.
+# image recognition.
 
 @app.get("/api/landmark/{landmark_id}")
 def landmark_lookup(landmark_id: int):
@@ -209,6 +243,24 @@ def landmark_lookup(landmark_id: int):
     return dict(landmark)
 
 
+@app.get("/api/featured/{preset_id}")
+def featured_destination(preset_id: str):
+    # Curated picks use Neon IDs, photos and coordinates without an ML upload.
+    try:
+        search = getattr(database_module, "train_search", None)
+        if search is None:
+            raise HTTPException(503, "Featured landmark search is unavailable. Check database.py.")
+        return get_featured_destination(preset_id, search, get_landmark,
+                                        get_landmark_photos, get_nearby_landmarks)
+    except FeaturedUnavailable as error:
+        raise HTTPException(404, str(error))
+    except HTTPException:
+        raise
+    except Exception:
+        logging.exception("Featured destination lookup failed")
+        raise HTTPException(503, "The featured destination could not be loaded. Please try again.")
+
+
 # PREDICTION ENDPOINT
 #
 # The endpoint /api/predict receives an image from the React app.
@@ -219,7 +271,7 @@ def landmark_lookup(landmark_id: int):
 async def predict_landmark(
     file: UploadFile = File(...)
 ):
-    # IMAGE CONTENT_TYPE VALIDATION
+    # VALIDATION OF IMAGE CONTENT_TYPE
     #
     # An image content type must be sent. If content type is not image then the
     # request will be rejected with an HTTP 400 error.
@@ -239,7 +291,9 @@ async def predict_landmark(
     #
     # If no bytes are received then the image is considered to be empty and will
     # be rejected.
-    contents = await file.read()
+    contents = await file.read(10 * 1024 * 1024 + 1)
+    if len(contents) > 10 * 1024 * 1024:
+        raise HTTPException(413, "Choose an image smaller than 10 MB.")
 
     if not contents:
         raise HTTPException(
@@ -252,8 +306,8 @@ async def predict_landmark(
     # The bytes of the image are passed to Pillow to confirm that they actually
     # represent an image.
     #
-    # This is a stronger method of checking than simply verifying content type or
-    # extension.
+    # This is a stronger method of checking than just verifying extension or content
+    # type.
     #
     # If Pillow cannot confirm that the image is valid then FastAPI will return an
     # HTTP 400 error.
@@ -267,32 +321,43 @@ async def predict_landmark(
             detail="Uploaded file is not a valid image.",
         )
 
-    # TEMPORARY 60% CHECKPOINT ML PREDICTION
-    #
-    # While DEMO_MODE is enabled Trekmark will use the landmark_id and confidence
-    # values from the environmental variables.
-    #
-    # For the 60% checkpoint this is used to temporarily simulate the DINOv2 +
-    # FAISS image recognition.
-    #
-    # The rest of the system is fully active.
-    #
-    # This means that the upload from React app, the FastAPI request, the query of
-    # Neon, the other photos of the same landmark, the nearby landmarks and the
-    # JSON returned to React are all active in the current implementation.
-    #
-    # This section can be replaced with the actual image recognition
-    # implementation as soon as the ML index is ready.
+    # Real image recognition runs off the event loop and returns a Neon landmark ID.
+    # DEMO_MODE remains an explicit fallback for testing/presentation.
+    ml_result = None
     if DEMO_MODE:
         landmark_id = DEMO_LANDMARK_ID
         confidence = DEMO_CONFIDENCE
         recognition_mode = "demo"
 
     else:
-        raise HTTPException(
-            status_code=503,
-            detail="Production landmark recognition is not available yet.",
-        )
+        try:
+            ml_result = await run_in_threadpool(recognize_image, contents)
+            # A rejected candidate is a normal recognition outcome. Do not look
+            # up its ID in Neon or search travel services for an uncertain place.
+            if ml_result.get("prediction_status") == "unknown" or ml_result.get("landmark_id") is None:
+                return {
+                    "prediction_status": "unknown", "recognition_mode": "ml",
+                    "message": "We couldn’t identify this landmark reliably. Try a clearer photo with the landmark filling more of the frame, or explore a featured destination.",
+                    "landmark": None, "confidence": None, "confidence_probability": None,
+                    "confidence_calibrated": False,
+                    "confidence_description": ml_result.get("confidence_description"),
+                    "match_score": ml_result.get("match_score"), "match_details": ml_result,
+                    "landmark_photos": [], "nearby_landmarks": [],
+                    "trip_suggestions": {"flights": [], "hotels": [], "restaurants": [],
+                                         "hotel_search": None, "restaurant_search": None,
+                                         "best_time_to_visit": None},
+                }
+            landmark_id = int(ml_result["landmark_id"])
+            confidence = ml_result["confidence_probability"]
+            recognition_mode = "ml"
+        except MLConfigurationError as error:
+            logging.exception("ML recognition could not load")
+            raise HTTPException(503, detail=str(error))
+        except ValueError as error:
+            raise HTTPException(422, detail=str(error))
+        except Exception:
+            logging.exception("ML recognition failed")
+            raise HTTPException(503, "Recognition could not finish. Check the backend terminal and try again.")
 
     # REAL NEON QUERY OF A LANDMARK
     #
@@ -315,15 +380,15 @@ async def predict_landmark(
 
     # DISPLAY NAME
     #
-    # If a value is not present in the name field of the database then the display
-    # name will use the following order:
+    # If not specified in the database in the 'name' field, the display
+    # name will be in the following order:
     #
     # 1. name
     # 2. category_name
     # 3. "Landmark {landmark_id}"
     #
-    # This ensures that a blank value is never returned to the React app as the
-    # display name for a landmark.
+    # This will ensure that an empty string is not returned as the display
+    # name for a landmark to the React app.
     display_name = (
         landmark["name"]
         or landmark["category_name"]
@@ -332,13 +397,13 @@ async def predict_landmark(
 
     # OTHER PHOTOS OF SAME LANDMARK
     #
-    # The function get_landmark_photos() will return photos for the same landmark
-    # associated with the landmark_id.
+    # The function get_landmark_photos() will return photos that are associated
+    # with the landmark_id.
     #
-    # Since a landmark_id can exist in more than one row in the training_data table
-    # Trekmark is able to show multiple photos of the same landmark.
+    # A landmark_id can be in more than one row in the training_data table,
+    # so Trekmark can return multiple photos of the same landmark.
     #
-    # The current implementation only will request up to five photos.
+    # Only a maximum of five photos will be requested currently.
     landmark_photos = get_landmark_photos(
         landmark_id=landmark_id,
         limit=5,
@@ -346,99 +411,146 @@ async def predict_landmark(
 
     # NEARBY LANDMARKS
     #
-    # Only if the identified landmark has latitude/longitude coordinates will nearby
-    # landmarks be calculated.
+    # If the selected landmark has latitude/longitude data then nearby
+    # landmarks can be determined.
     #
-    # The function get_nearby_landmarks() will return nearby landmarks while
-    # excluding the identified landmark.
+    # The function get_nearby_landmarks() will return nearby landmarks,
+    # excluding the selected landmark.
     #
-    # The current implementation will return up to three landmarks within a maximum
-    # distance of 600 kilometers.
+    # Up to three landmarks within 600 kilometers will be returned currently.
     #
-    # The maximum distance is designed to give recommendations within a specific
-    # area or within a reasonable distance of another country.
+    # 600 kilometers is a reasonable maximum distance to make suggestions
+    # within a specific area or within a reasonable distance of another
+    # country.
     nearby_landmarks = []
 
-    if landmark["lat"] is not None and landmark["lon"] is not None:
-        nearby_results = get_nearby_landmarks(
-            lat=landmark["lat"],
-            lon=landmark["lon"],
-            exclude_landmark_id=landmark_id,
-            limit=3,
-            max_distance_km=600.0,
-        )
-
-        for nearby in nearby_results:
-            # CLEANING NAME OF NEARBY LANDMARK
-            #
-            # If a value is not present in the name field of the database then the
-            # display name will use the following order:
-            #
-            # 1. name
-            # 2. category_name
-            # 3. landmark ID
-            #
-            # If the value category_name is used then the "Category:" text will be
-            # removed and any underscores will be replaced with spaces.
-            #
-            # This is done so that the value is more user friendly.
-            nearby_name = (
-                nearby["name"]
-                or nearby["category_name"]
-                or f"Landmark {nearby['landmark_id']}"
+    # Nearby suggestions are optional. A mismatch helper must not turn a
+    # valid image upload into HTTP 500.
+    try:
+        if landmark["lat"] is not None and landmark["lon"] is not None:
+            # Different branches have different database helper functions. Only pass
+            # supported keywords and validate before making a call so that a database
+            # action cannot be retried after an internal TypeError.
+            candidates = {
+                "lat": landmark["lat"], "lon": landmark["lon"],
+                "exclude_landmark_id": landmark_id, "landmark_id": landmark_id, "limit": 4,
+                "max_distance_km": 600.0,
+            }
+            signature = inspect.signature(get_nearby_landmarks)
+            accepts_kwargs = any(
+                parameter.kind == inspect.Parameter.VAR_KEYWORD
+                for parameter in signature.parameters.values()
             )
+            arguments = {
+                key: value for key, value in candidates.items()
+                if accepts_kwargs or key in signature.parameters
+            }
+            signature.bind(**arguments)
+            nearby_results = get_nearby_landmarks(**arguments)
 
-            if nearby_name.startswith("Category:"):
-                nearby_name = nearby_name.replace(
-                    "Category:",
-                    ""
-                ).replace("_", " ")
+            for nearby in nearby_results:
+                # Even if the database helper does not have an option to exclude the
+                # selected landmark, it will still be excluded. A maximum of three
+                # recommendations will be returned.
+                if str(nearby["landmark_id"]) == str(landmark_id):
+                    continue
+                if len(nearby_landmarks) >= 3:
+                    break
+                # CLEANING NAME OF NEARBY LANDMARK
+                #
+                # If not specified in the database in the 'name' field, the display
+                # name will be in the following order:
+                #
+                # 1. name
+                # 2. category_name
+                # 3. landmark ID
+                #
+                # If the value category_name is used then the 'Category:' string will be
+                # stripped and all underscores will be replaced by spaces.
+                #
+                # This is to make the string user friendly.
+                nearby_name = (
+                    nearby["name"]
+                    or nearby["category_name"]
+                    or f"Landmark {nearby['landmark_id']}"
+                )
 
-            # NEARBY LANDMARKS RESPONSE FORMAT
-            #
-            # Each nearby landmark is turned into a small JSON object that is
-            # friendly to use in the React app.
-            #
-            # The object contains the following information:
-            #
-            # - landmark ID
-            # - display name
-            # - city
-            # - state or region
-            # - country
-            # - image URL
-            # - distance in kilometers
-            #
-            # This information can then be used to create cards for nearby landmarks.
-            nearby_landmarks.append({
-                "id": nearby["landmark_id"],
-                "name": nearby_name,
-                "city": nearby["city"],
-                "state": nearby["state"],
-                "country": nearby["country"],
-                "image": nearby["url"],
-                "distance_km": float(nearby["distance_km"]),
-            })
+                if nearby_name.startswith("Category:"):
+                    nearby_name = nearby_name.replace(
+                        "Category:",
+                        ""
+                    ).replace("_", " ")
+
+                # NEARBY LANDMARKS RESPONSE FORMAT
+                #
+                # Nearby landmarks will be converted into small JSON objects that are
+                # easy to use by the React app.
+                #
+                # The objects will have the following data:
+                #
+                # - landmark ID
+                # - display name
+                # - city
+                # - region or state
+                # - country
+                # - image URL
+                # - distance in kilometers
+                #
+                # These objects can be used to create cards for nearby landmarks.
+                nearby_landmarks.append({
+                    "id": nearby["landmark_id"],
+                    "name": nearby_name,
+                    "city": nearby["city"],
+                    "state": nearby["state"],
+                    "country": nearby["country"],
+                    "image": nearby["url"],
+                    "distance_km": float(nearby["distance_km"]),
+                })
+
+    except Exception:
+        logging.getLogger(__name__).exception(
+            "Nearby landmark lookup failed; returning recognition and hotels."
+        )
+        nearby_landmarks = []
+
+    # AUTOMATIC HOTEL SEARCH
+    #
+    # Use the coordinates from Neon instead of hardcoded values in the frontend.
+    # If a hotel is not found, instead of removing the landmark, it will be
+    # marked as unavailable.
+    # The hotel search runs in a separate worker thread so it does not block
+    # the FastAPI event loop. This same database to hotel search can be used
+    # for future ML predictions.
+    hotel_search = await run_in_threadpool(
+        get_hotels, landmark["lat"], landmark["lon"], 5000, 3
+    )
+
+    # Restaurants will use the coordinates from Neon and follow after hotels.
+    # The sequential calls also follow Wikimedia's request policy.
+    restaurant_search = await run_in_threadpool(
+        get_restaurants, landmark["lat"], landmark["lon"], 5000, 3
+    )
 
     # PREDICTION RESPONSE
     #
-    # The response to the /api/predict endpoint is a single JSON object that
-    # contains all the data the React app needs.
+    # The response of the /api/predict endpoint is a single JSON object that
+    # contains all of the data needed by the React app.
     #
     # This includes:
     #
-    # - information about the identified landmark
+    # - information about the selected landmark
     # - confidence of the identification
-    # - mode of identification
-    # - other photos of the same landmark
+    # - method used for identification
+    # - other photos of same landmark
     # - nearby landmarks
-    # - placeholders for future trip planning services
+    # - nearby hotels and status of provider
+    # - placeholders for other trip planning items
     #
-    # The trip_suggestions object already has placeholders for flights, hotels,
-    # restaurants, and best time to visit.
+    # The trip_suggestions object already contains placeholders for the
+    # best time to visit, restaurants, hotels, and flights.
     #
-    # These can be added later without requiring a complete redesign of the
-    # response.
+    # These can be added later without the need to change the response.
+
     return {
         "landmark": {
             "id": landmark_id,
@@ -453,6 +565,12 @@ async def predict_landmark(
         },
 
         "confidence": confidence,
+        "confidence_calibrated": bool(ml_result and ml_result.get("confidence_calibrated")),
+        "confidence_probability": ml_result.get("confidence_probability") if ml_result else None,
+        "match_score": ml_result.get("match_score") if ml_result else None,
+        "confidence_description": ml_result.get("confidence_description") if ml_result else "Preset demonstration score; not calibrated.",
+        "prediction_status": ml_result.get("prediction_status") if ml_result else "demo",
+        "match_details": ml_result,
 
         "recognition_mode": recognition_mode,
 
@@ -462,161 +580,144 @@ async def predict_landmark(
 
         "trip_suggestions": {
             "flights": [],
-            "hotels": [],
-            "restaurants": [],
+            "hotels": hotel_search["hotels"],
+            "hotel_search": hotel_search,
+            "restaurants": restaurant_search["restaurants"],
+            "restaurant_search": restaurant_search,
             "best_time_to_visit": None,
         },
     }
 
 
+# DIRECT HOTEL SEARCH
+#
+# This is used in radius changes, retries, and preset destinations from the
+# frontend. A search is also automatically performed on uploaded landmarks
+# in /api/predict.
+@app.get("/api/hotels")
+def hotels(
+    lat: float = Query(..., ge=-90, le=90),
+    lon: float = Query(..., ge=-180, le=180),
+    radius_m: int = Query(5000, ge=500, le=25000),
+    limit: int = Query(3, ge=1, le=3),
+):
+    result = get_hotels(lat, lon, radius_m, limit)
+    if result["status"] != "ok":
+        status_code = {
+            "missing_coordinates": 422,
+            "invalid_search": 422,
+            "not_configured": 503,
+            "authentication_error": 503,
+            "quota_reached": 503,
+            "timeout": 504,
+        }.get(result["status"], 502)
+        raise HTTPException(status_code=status_code, detail=result["message"])
+    return result
+
+
+# Radius changes and preset destinations also use the same automatic search.
+@app.get("/api/restaurants")
+def restaurants(
+    lat: float = Query(..., ge=-90, le=90),
+    lon: float = Query(..., ge=-180, le=180),
+    radius_m: int = Query(5000, ge=500, le=25000),
+    limit: int = Query(3, ge=1, le=3),
+):
+    result = get_restaurants(lat, lon, radius_m, limit)
+    if result["status"] != "ok":
+        status_code = {
+            "missing_coordinates": 422, "invalid_search": 422,
+            "not_configured": 503, "authentication_error": 503,
+            "quota_reached": 503, "timeout": 504,
+        }.get(result["status"], 502)
+        raise HTTPException(status_code=status_code, detail=result["message"])
+    return result
+
+
+# When a destination is chosen in the frontend, the automatic search
+# starts automatically. This runs in a separate thread and so airport
+# lookup does not interfere with image identification.
+@app.get("/api/airports")
+def airports(
+    lat: float = Query(..., ge=-90, le=90),
+    lon: float = Query(..., ge=-180, le=180),
+    international_only: bool = Query(False),
+):
+    result = get_nearest_airport(lat, lon, international_only)
+    if result["status"] != "ok":
+        status_code = {
+            "missing_coordinates": 422, "invalid_search": 422,
+            "not_configured": 503, "authentication_error": 503,
+            "quota_reached": 503, "timeout": 504,
+        }.get(result["status"], 502)
+        raise HTTPException(status_code=status_code, detail=result["message"])
+    return result
+
+
 # LANDMARK SUBMISSION
 #
-# The /submission endpoint allows users to submit new landmarks that are not
-# currently in Trekmark.
+# The /submission endpoint allows for submission of new landmarks that are
+# not currently in Trekmark.
 #
-# The form for submitting a landmark is sent via the React app using
-# multipart/form-data.
+# When a user submits a new landmark a form is sent from the React app
+# using multipart/form-data.
 
 @app.post("/submission")
 def new_submission(
-    # SUBMISSION DATA
-    #
-    # The following fields are required:
-    #
-    # - image URL
-    # - landmark name
-    # - country
-    #
-    # The following fields are optional:
-    #
-    # - city
-    # - state or region
-    # - latitude
-    # - longitude
-    #
-    # Not all landmarks will necessarily have all of these fields. Therefore they
-    # are optional.
-    #
-    # FORM(...)
-    #
-    # The Form(...) in FastAPI will cause the fields to be read as part of
-    # multipart/form-data instead of part of JSON.
-    #
-    # This is done in order to keep the endpoint open to use in a direct image
-    # upload scenario later.
-    image_url: str = Form(
-        ...,
-        description="Image URL for the landmark"
-    ),
-    name: str = Form(
-        ...,
-        description="Name of the landmark"
-    ),
+    request: Request,
+    image: UploadFile = File(...),
+    name: str = Form(...),
     country: str = Form(...),
     city: Optional[str] = Form(None),
     state: Optional[str] = Form(None),
-    lat: Optional[float] = Form(None),
-    lon: Optional[float] = Form(None),
+    lat: Optional[str] = Form(None),
+    lon: Optional[str] = Form(None),
 ):
-    # CLEAN REQUIRED TEXT FIELDS
-    #
-    # The strip() function will be used to remove any extra spaces at the beginning
-    # or end of the required text fields before they are saved.
-    image_url = image_url.strip()
-    name = name.strip()
-    country = country.strip()
-
-    # HANDLE OPTIONAL TEXT FIELDS
-    #
-    # If the user leaves the city or state field blank then they will be None.
-    #
-    # This allows the NULL value to be saved to the database instead of an empty or
-    # fabricated value.
-    city = city.strip() if city else None
-    state = state.strip() if state else None
-
-    # VALIDATE REQUIRED FIELDS
-    #
-    # After cleaning the required text fields another verification step is
-    # performed.
-    #
-    # If any of the image URL, landmark name or country are empty then FastAPI will
-    # return an HTTP 400 error.
-    if not image_url:
-        raise HTTPException(
-            status_code=400,
-            detail="Image URL is required.",
-        )
-
-    if not name:
-        raise HTTPException(
-            status_code=400,
-            detail="Landmark name is required.",
-        )
-
-    if not country:
-        raise HTTPException(
-            status_code=400,
-            detail="Country is required.",
-        )
-
+    # Read a bounded file and do not trust the declared MIME type or the
+    # filename.
+    rate_limit(request, "submission", 15)
+    name, country = name.strip(), country.strip()
+    # Multipart forms may have optional coordinates as empty strings.
+    def coordinate(value, label, bound):
+        if value is None or not value.strip():
+            return None
+        try:
+            number = float(value.strip())
+            if not math.isfinite(number) or abs(number) > bound:
+                raise ValueError()
+            return number
+        except (ValueError, TypeError):
+            raise HTTPException(422, f"{label} must be a number between -{bound} and {bound}, or left blank.")
+    lat, lon = coordinate(lat, "Latitude", 90), coordinate(lon, "Longitude", 180)
+    if not name or not country or len(name) > 200 or len(country) > 120:
+        raise HTTPException(422, "Enter a landmark name and country (200/120 characters maximum).")
+    content = image.file.read(10 * 1024 * 1024 + 1)
+    image_id = None
     try:
-        # SAVE SUBMISSION IN NEON
-        #
-        # The function create_user_submission() is implemented in database.py.
-        #
-        # It will insert the data about a user submitted landmark into the
-        # user_submissions table in Neon.
-        #
-        # Right now the image URL submitted by the user will be saved.
-        #
-        # Once the object storage implementation is complete this can be changed so
-        # that the image is uploaded by the backend and the generated object storage
-        # URL is saved instead.
-        create_user_submission(
-            image_url=image_url,
-            name=name,
-            country=country,
-            city=city,
-            state=state,
-            lat=lat,
-            lon=lon,
-        )
-
-    except Exception as error:
-        # HANDLE DATABASE ERROR WITH SUBMISSION
-        #
-        # If there is an error during the insert into the database then FastAPI will
-        # return an HTTP 500 error with an error message.
-        #
-        # This ensures that the React app does not indicate a successful submission
-        # even if the database insert failed.
-        raise HTTPException(
-            status_code=500,
-            detail=f"Could not save landmark submission: {error}",
-        )
-
-    # RESPONSE ON SUCCESSFUL SUBMISSION
-    #
-    # After the submission is successfully inserted into the database the endpoint
-    # will return:
-    #
-    # status: accepted
-    #
-    # message: Landmark submitted for review.
-    #
-    # The React app can use this response to show the success animation and allow
-    # the user to enter another landmark.
-    return {
-        "status": "accepted",
-        "message": "Landmark submitted for review.",
-    }
+        image_id = store_image(content)
+        image_url = str(request.url_for("landmark_media", image_id=image_id))
+        submission_id = create_user_submission(image_url=image_url, name=name, country=country,
+            city=city.strip() if city else None, state=state.strip() if state else None, lat=lat, lon=lon)
+    except HTTPException:
+        raise
+    except Exception:
+        if image_id:
+            try:
+                discard_image(image_id)
+            except Exception:
+                logging.exception("Could not remove failed submission image")
+        logging.exception("Could not save landmark submission")
+        raise HTTPException(503, "The landmark could not be saved. Please try again.")
+    finally:
+        image.file.close()
+    return {"status": "accepted", "message": "Landmark submitted for review.",
+            "submission_id": submission_id, "image_url": image_url}
 
 
 # ADMIN API
 #
-# These routes support the React /admin page. All admin data routes require
-# a Bearer token returned by /admin/login.
+# These endpoints are used by the React app in the /admin page.
+# All admin data endpoints require a Bearer token from /admin/login.
 class AdminLoginRequest(BaseModel):
     username: str
     password: str
@@ -632,6 +733,18 @@ class SubmissionInfo(BaseModel):
     lon: Optional[float] = None
     category_name: Optional[str] = None
     landmark_id: Optional[int] = None
+
+    @field_validator("category_name", mode="before")
+    @classmethod
+    def normalize_category(cls, value):
+        if value is None:
+            return None
+        if not isinstance(value, str):
+            raise ValueError("Category must be text.")
+        formatted = format_category_name(value)
+        if formatted and len(formatted) > 250:
+            raise ValueError("Category must be at most 250 characters.")
+        return formatted
 
 
 def require_admin(authorization: Optional[str] = Header(None)):
@@ -663,7 +776,8 @@ def get_admin_database_function(name: str):
 
 
 @app.post("/admin/login")
-def admin_login(credentials: AdminLoginRequest):
+def admin_login(credentials: AdminLoginRequest, request: Request):
+    rate_limit(request, "admin_login", 10)
     if not ADMIN_PASSWORD:
         raise HTTPException(
             status_code=503,
@@ -714,6 +828,8 @@ def admin_approve_submission(
     info: SubmissionInfo,
     _: str = Depends(require_admin),
 ):
+    if not info.category_name:
+        raise HTTPException(422, "Enter a category before approving this landmark.")
     function = get_admin_database_function("approve_submission")
     result = function(submission_id, info.model_dump())
     return {
