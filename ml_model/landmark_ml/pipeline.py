@@ -1,5 +1,7 @@
 from pathlib import Path
 from dataclasses import asdict
+import json
+from threading import RLock
 from .embeddings import DinoV2Embedder, ImageInput
 from .retrieval import Reference, ReferenceIndex
 from .decision import RecognitionPolicy
@@ -14,6 +16,7 @@ class LandmarkPipeline:
         self.recognition_policy = recognition_policy or RecognitionPolicy()
         self.index_directory = None
         self.indexed_landmark_count = len({ref.landmark_id for ref in index.references})
+        self._prediction_lock = RLock()
 
     @classmethod
     def build(cls, references: list[Reference], model_path="dinov2-small", batch_size=16, device="cpu"):
@@ -37,8 +40,12 @@ class LandmarkPipeline:
 
     @classmethod
     def load(cls, directory, model_path="dinov2-small", device="cpu"):
+        from .artifacts import verify_bundle
+        verify_bundle(directory)
         embedder = DinoV2Embedder(model_path, device)
-        pipeline = cls(embedder, ReferenceIndex.load(directory, embedder.signature))
+        policy_path = Path(directory) / 'recognition-policy.json'
+        policy = RecognitionPolicy(**json.loads(policy_path.read_text(encoding='utf-8'))) if policy_path.is_file() else None
+        pipeline = cls(embedder, ReferenceIndex.load(directory, embedder.signature), policy)
         pipeline.index_directory = str(Path(directory).resolve())
         calibration_path = Path(directory) / "calibration.json"
         if calibration_path.is_file():
@@ -47,7 +54,8 @@ class LandmarkPipeline:
         return pipeline
 
     def predict(self, image: ImageInput, top_k: int = 5) -> dict:
-        result = self.index.predict(self.embedder.embed([image])[0], top_k)
+        with self._prediction_lock:
+            result = self.index.predict(self.embedder.embed([image])[0], top_k)
         reason = 'No compatible calibrator installed for this index.'
         compatible = self.calibrator is not None and top_k == self.calibrator['top_k']
         if self.calibrator is not None and not compatible:
@@ -62,8 +70,13 @@ class LandmarkPipeline:
                 reason = 'Match score is outside the fitted calibration range.'
         if compatible:
             from .calibration import probability
-            result["confidence_probability"] = probability(self.calibrator, result["match_score"])
-            result["confidence_calibrated"] = True
+            value = probability(self.calibrator, result)
+            lower, upper = self.calibrator.get('validated_probability_range', [0., 1.])
+            if lower <= value <= upper:
+                result["confidence_probability"] = value
+                result["confidence_calibrated"] = True
+            else:
+                reason = 'Estimated probability is outside the independently validated range.'
         result['confidence'] = result['confidence_probability']
         result['confidence_description'] = ('Estimated correctness probability for data comparable to the calibration set.'
                                             if result['confidence_calibrated'] else reason)
@@ -80,7 +93,11 @@ class LandmarkPipeline:
         result['index_info'] = {'directory': self.index_directory, 'reference_count': self.index.index.ntotal,
                                 'landmark_count': self.indexed_landmark_count, 'dimension': self.index.index.d}
         result['match_score_description'] = 'Similarity and reference agreement; not a probability of correctness.'
+        result['confidence_validation_scope'] = self.calibrator.get('validation_scope') if self.calibrator else None
         return result
 
     def save(self, directory):
-        self.index.save(directory)
+        extra_files = {'recognition-policy.json': asdict(self.recognition_policy)}
+        if self.calibrator is not None:
+            extra_files['calibration.json'] = self.calibrator
+        self.index.save(directory, extra_files=extra_files)

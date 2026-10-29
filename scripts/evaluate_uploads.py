@@ -91,7 +91,7 @@ def main():
             raise ValueError('Need a separate test set of at least 20 photos, with accepted predictions to evaluate')
         model = fit([r['match_score'] for r in calibration], [r['correct'] for r in calibration])
         model.update(index_signature=index_signature(pipeline.index), top_k=5, recognition_policy=asdict(pipeline.recognition_policy),
-                     population='accepted_predictions', calibration_image_hashes=[r['sha256'] for r in calibration])
+                     population='accepted_predictions', deployment_status='not_approved', dataset='verified_frontend_uploads', calibration_image_hashes=[r['sha256'] for r in calibration])
         eligible = [r for r in accepted_test if model['score_range'][0] <= r['match_score'] <= model['score_range'][1]]
         if not eligible:
             raise ValueError('No accepted test scores fall within the calibration range')

@@ -123,11 +123,15 @@ def prepare_handoff(directory):
         report.update(coverage=coverage)
         (target / 'build.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
         with (target / 'HANDOFF.txt').open('w', encoding='utf-8') as stream:
-            stream.write('Use the latest landmark_ml package from this branch. Point LANDMARK_INDEX_PATH to this extracted folder. Use the same dinov2-small weights already supplied with the project. images.faiss is the canonical FAISS index. Its identical alternate filename landmarks.index is omitted from the ZIP to avoid doubling the transfer size; no alias is needed by LandmarkPipeline. The mapping preserves Neon landmark IDs. No Python environment, image archive, or checkpoint is needed on the receiving computer. This expanded index is not probability-calibrated; confidence is a raw matching score. validation.json compares compact retrieval against the full-precision master, not ground-truth recognition accuracy. build.json contains actual coverage and unavailable-source counts.\n')
+            stream.write('Use the latest landmark_ml package from this branch. Point LANDMARK_INDEX_PATH to this extracted folder. Use the same dinov2-small weights already supplied with the project. images.faiss is the canonical FAISS index. Its identical alternate filename landmarks.index is omitted from the ZIP to avoid doubling the transfer size; no alias is needed by LandmarkPipeline. The mapping preserves Neon landmark IDs. No Python environment, image archive, or checkpoint is needed on the receiving computer. This expanded index is not probability-calibrated; confidence is null. match_score is a raw matching score, not a correctness probability. Unreliable matches return an unknown result. validation.json compares compact retrieval against the full-precision master, not ground-truth recognition accuracy. build.json contains actual coverage and unavailable-source counts.\n')
         if published.exists():
             published.rename(directory / ('handoff-incomplete-' + uuid4().hex))
         target.rename(published)
     target = published
+    compact = ReferenceIndex.load(target, master.signature)
+    if compact.references != master.references:
+        raise ValueError('Existing handoff mapping differs from the completed master; export to a fresh directory')
+    del compact
     archive = directory / 'teammate-index.zip'
     if not archive.exists():
         require_space(directory, sum(p.stat().st_size for p in target.iterdir() if p.is_file() and p.name != 'landmarks.index'))
@@ -141,6 +145,16 @@ def prepare_handoff(directory):
             if zipped.testzip() is not None:
                 raise ValueError('Final ZIP failed integrity validation')
         staging.rename(archive)
+    from .artifacts import sha256_file, sha256_stream
+    with zipfile.ZipFile(archive) as zipped:
+        for path in target.iterdir():
+            if path.is_file() and path.name != 'landmarks.index':
+                try:
+                    with zipped.open(path.name) as stream:
+                        if sha256_stream(stream) != sha256_file(path):
+                            raise ValueError('Existing handoff ZIP differs from the runtime index; create a fresh package')
+                except KeyError as error:
+                    raise ValueError('Existing handoff ZIP is incomplete; create a fresh package') from error
     digest = hashlib.sha256()
     with archive.open('rb') as stream:
         while data := stream.read(4 * 1024 * 1024):

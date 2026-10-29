@@ -1,0 +1,3 @@
+[submodule "dinov2-small"]
+	path = dinov2-small
+	url = https://huggingface.co/facebook/dinov2-small

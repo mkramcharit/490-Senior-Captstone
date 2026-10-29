@@ -18,16 +18,27 @@ def write_state(root, **values):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('directory', type=Path)
+    parser.add_argument('--device', choices=['auto', 'cpu', 'cuda'], default='auto')
+    parser.add_argument('--model', default='dinov2-small')
+    parser.add_argument('--batch-size', type=int)
     args = parser.parse_args()
+    import torch
+    device = ('cuda' if torch.cuda.is_available() else 'cpu') if args.device == 'auto' else args.device
+    if device == 'cuda' and not torch.cuda.is_available():
+        parser.error('CUDA is unavailable in this Python environment; use --device cpu')
+    batch_size = args.batch_size or (64 if device == 'cuda' else 16)
+    if batch_size < 1:
+        parser.error('Batch size must be positive')
     root = args.directory.resolve()
     root.mkdir(parents=True, exist_ok=True)
     if os.name == 'nt':
         if not ctypes.windll.kernel32.SetThreadExecutionState(0x80000001):
             raise OSError('Unable to prevent automatic system sleep')
     command = [sys.executable, '-u', '-B', '-m', 'landmark_ml.full_archive', str(root),
-               '--batch-size', '64', '--threads', '4', '--device', 'cuda',
+               '--batch-size', str(batch_size), '--threads', '4', '--device', device, '--model', args.model,
                '--prefetch', '2', '--download-workers', '2', '--preprocess-workers', '4']
     attempts = 0
+    child = None
     try:
         while not (root / 'handoff-ready.json').is_file():
             attempts += 1
@@ -65,6 +76,13 @@ def main():
             time.sleep(60)
         write_state(root, phase='complete', attempt=attempts)
     finally:
+        if child is not None and child.poll() is None:
+            child.terminate()
+            try:
+                child.wait(timeout=30)
+            except subprocess.TimeoutExpired:
+                child.kill()
+                child.wait()
         if os.name == 'nt':
             ctypes.windll.kernel32.SetThreadExecutionState(0x80000000)
 
