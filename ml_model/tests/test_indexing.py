@@ -61,7 +61,7 @@ def test_keyset_query_is_bounded_and_parameterized():
     assert connection.parameters == ['last', [25719], 256]
 
 
-def test_compatibility_confidence_and_tuple_adapter(monkeypatch):
+def test_compatibility_confidence_and_tuple_adapter(monkeypatch, tmp_path):
     index = ReferenceIndex(2, 'test')
     index.add([[1, 0]], [Reference(25719, 'neon:1')])
     pipeline = LandmarkPipeline(embedder(), index)
@@ -70,6 +70,9 @@ def test_compatibility_confidence_and_tuple_adapter(monkeypatch):
     assert result['match_score'] == 1
     assert result['index_info']['reference_count'] == 1
     assert result['index_info']['landmark_count'] == 1
+    # Isolate adapter behavior from local model/index configuration.
+    monkeypatch.setattr('landmark_ml.recognition.resolve_index', lambda value: tmp_path / 'index')
+    monkeypatch.setattr('landmark_ml.recognition.resolve_model', lambda value: tmp_path / 'model')
     monkeypatch.setattr('landmark_ml.recognition._pipeline', lambda *args: pipeline)
     assert recognize_image(b'a') == (25719, None)
     pipeline.calibrator = {'top_k': 5, 'mean': 0, 'scale': 1, 'weights': [0, 0]}

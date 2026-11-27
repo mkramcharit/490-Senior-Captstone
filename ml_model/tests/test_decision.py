@@ -43,8 +43,11 @@ def test_near_duplicate_with_clear_margin_preserves_exact_match():
     assert pipeline([.997, .78, .77], [1, 2, 3]).predict(b'image')['landmark_id'] == 1
 
 
-def test_tuple_adapter_preserves_unknown(monkeypatch):
+def test_tuple_adapter_preserves_unknown(monkeypatch, tmp_path):
     from landmark_ml import recognize_image
+    # Isolate adapter behavior from local model/index configuration.
+    monkeypatch.setattr('landmark_ml.recognition.resolve_index', lambda value: tmp_path / 'index')
+    monkeypatch.setattr('landmark_ml.recognition.resolve_model', lambda value: tmp_path / 'model')
     monkeypatch.setattr('landmark_ml.recognition._pipeline', lambda *args: pipeline([.7, .69], [1, 2]))
     assert recognize_image(b'image') == (None, None)
 
