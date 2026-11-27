@@ -1,0 +1,112 @@
+{
+  "evaluation": "held-out images through real FastAPI endpoint and Neon lookup",
+  "correct": 3,
+  "total": 5,
+  "results": [
+    {
+      "image_path": "images/80273675a4c7ad9c2dd7.jpg",
+      "expected_landmark_id": 104169,
+      "status": 200,
+      "correct": true,
+      "response": {
+        "landmark_id": 104169,
+        "confidence": 0.15956783294677734,
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 104169,
+          "name": "Stirling Castle",
+          "category_name": "Category:Stirling_Castle",
+          "lat": 56.12388889,
+          "lon": -3.94777778,
+          "city": "Stirling",
+          "state": "Scotland",
+          "country": "United Kingdom"
+        }
+      }
+    },
+    {
+      "image_path": "images/ff46538e634c06a8002c.jpg",
+      "expected_landmark_id": 104169,
+      "status": 200,
+      "correct": true,
+      "response": {
+        "landmark_id": 104169,
+        "confidence": 0.2301102876663208,
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 104169,
+          "name": "Stirling Castle",
+          "category_name": "Category:Stirling_Castle",
+          "lat": 56.12388889,
+          "lon": -3.94777778,
+          "city": "Stirling",
+          "state": "Scotland",
+          "country": "United Kingdom"
+        }
+      }
+    },
+    {
+      "image_path": "images/89f1bf6aac5720eea044.jpg",
+      "expected_landmark_id": 25719,
+      "status": 200,
+      "correct": false,
+      "response": {
+        "landmark_id": 73107,
+        "confidence": 0.0682875394821167,
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 73107,
+          "name": "George Washington's Mount Vernon",
+          "category_name": "Category:Mount_Vernon",
+          "lat": 38.70777778,
+          "lon": -77.08611111,
+          "city": "Mount Vernon",
+          "state": "Virginia",
+          "country": "United States"
+        }
+      }
+    },
+    {
+      "image_path": "images/6e94e51befb8944fabad.jpg",
+      "expected_landmark_id": 73107,
+      "status": 200,
+      "correct": true,
+      "response": {
+        "landmark_id": 73107,
+        "confidence": 0.0940274566411972,
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 73107,
+          "name": "George Washington's Mount Vernon",
+          "category_name": "Category:Mount_Vernon",
+          "lat": 38.70777778,
+          "lon": -77.08611111,
+          "city": "Mount Vernon",
+          "state": "Virginia",
+          "country": "United States"
+        }
+      }
+    },
+    {
+      "image_path": "images/4239bde8a69394c48a59.jpg",
+      "expected_landmark_id": 73107,
+      "status": 200,
+      "correct": false,
+      "response": {
+        "landmark_id": 25719,
+        "confidence": 0.08472155928611755,
+        "confidence_description": "Similarity and reference agreement score; not a calibrated probability.",
+        "landmark": {
+          "landmark_id": 25719,
+          "name": "Monza Cathedral",
+          "category_name": "Category:Duomo_(Monza)",
+          "lat": 45.58359,
+          "lon": 9.27567,
+          "city": "Monza",
+          "state": "Lombardy",
+          "country": "Italy"
+        }
+      }
+    }
+  ]
+}

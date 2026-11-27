@@ -1,0 +1,32 @@
+[
+  {
+    "id": "58fda2401c5520a1",
+    "landmark_id": 73107,
+    "name": "George Washington's Mount Vernon",
+    "source_url": "https://upload.wikimedia.org/wikipedia/commons/f/fd/Martha_Washington_impersonator_meets_Chris_Lu%2C_Mount_Vernon%2C_2016_%284%29.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fd/Martha_Washington_impersonator_meets_Chris_Lu%2C_Mount_Vernon%2C_2016_%284%29.jpg/960px-Martha_Washington_impersonator_meets_Chris_Lu%2C_Mount_Vernon%2C_2016_%284%29.jpg",
+    "sha256": "7577e7dd40f0c26d64dbad682aecd99701b588e295265a6a68ae3e096af961a6",
+    "image_path": "images/3d0b57409f76a528fc2c.jpg",
+    "reason": "Same Martha Washington/Chris Lu event as preliminary test; excluded before model predictions"
+  },
+  {
+    "id": "8ba2b40d79159158",
+    "landmark_id": 73107,
+    "name": "George Washington's Mount Vernon",
+    "source_url": "https://upload.wikimedia.org/wikipedia/commons/5/5b/Martha_Washington_impersonator%2C_Mount_Vernon%2C_2016.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Martha_Washington_impersonator%2C_Mount_Vernon%2C_2016.jpg/960px-Martha_Washington_impersonator%2C_Mount_Vernon%2C_2016.jpg",
+    "sha256": "69591351693cce4a2bebd87839a99f8e8db93d757686ba07eb4f068e02828a42",
+    "image_path": "images/3e3f520e091329235ee8.jpg",
+    "reason": "Same Martha Washington/Chris Lu event as preliminary test; excluded before model predictions"
+  },
+  {
+    "id": "c34ab361205052c3",
+    "landmark_id": 73107,
+    "name": "George Washington's Mount Vernon",
+    "source_url": "https://upload.wikimedia.org/wikipedia/commons/f/f3/Historic_Road_-_Flickr_-_GregTheBusker.jpg",
+    "download_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/Historic_Road_-_Flickr_-_GregTheBusker.jpg/960px-Historic_Road_-_Flickr_-_GregTheBusker.jpg",
+    "sha256": "131f89b1301ae8c0a229782c2f537806ccc1de12ada755d4cd604223404173b6",
+    "image_path": "images/affcc26f0f3eba16e409.jpg",
+    "reason": "Location label could not be verified during pre-prediction visual/source audit"
+  }
+]
