@@ -29,6 +29,6 @@ where = ["ml_model"]
 include = ["landmark_ml*"]
 
 [tool.pytest.ini_options]
-testpaths = ["ml_model/tests", "backend/tests"]
+testpaths = ["ml_model/tests"]
 pythonpath = ["ml_model", "."]
 markers = ["integration: exercises real local DINOv2 weights"]

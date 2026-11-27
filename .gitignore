@@ -1,12 +1,39 @@
-.venv/
-__pycache__/
-.pytest_cache/
-*.egg-info/
-artifacts/
-tmp/
-
+# Private configuration
 .env
 .env.*
 !.env.example
-frontend/node_modules/
-frontend/dist/
+!.env.*.example
+env.geoapify
+
+# Python environments and generated files
+.venv/
+.venv-mac/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+build/
+
+# Frontend dependencies and builds
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Local model weights and vector indexes
+**/ml_assets/
+artifacts/
+*.faiss
+*.safetensors
+
+# Temporary files and logs
+tmp/
+*.log
+
+# Operating system files
+.DS_Store
+Thumbs.db
