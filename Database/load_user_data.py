@@ -1,3 +1,5 @@
+import os
+
 # Three goals for this code:
 # 1. The user needs to be able to submit landmarks to be added to the database
 # 2. The admins need to be able to review landmarks and either reject or approve them
@@ -12,7 +14,7 @@ import pandas as pd
 app = FastAPI(title="TO-DO: APPNAME")
 
 engine = create_engine(
-    "postgresql+psycopg2://landmarks_owner:npg_jcmM5DsKEr1b@ep-dry-breeze-a5wcb604-pooler.us-east-2.aws.neon.tech/landmarks?sslmode=require&channel_binding=require"
+    os.environ["DATABASE_URL"]
 )
 
 APPROVAL_THRESHOLD = 30
