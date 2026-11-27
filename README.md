@@ -238,8 +238,8 @@ In addition to the above endpoints, interactive API documentation for the curren
 | --- | --- |
 | Michael Ramcharitar | Building and integrating the React interface |
 | Michael Chapman | Using machine learning to recognize landmarks using embeddings and FAISS |
-| Brycen | Utilizing external resources to create backend APIs and caching |
-| Chris | Creating images, location information, and database content |
+| Brycen Parsons | Utilizing external resources to create backend APIs and caching |
+| Chris Hochrein | Creating images, location information, and database content |
 
 ## Current limitations
 
